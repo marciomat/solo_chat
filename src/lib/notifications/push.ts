@@ -170,13 +170,25 @@ export function showLocalNotification(
   title: string,
   options?: NotificationOptions
 ): void {
+  const permission = typeof Notification !== "undefined" ? Notification.permission : "unavailable";
+  const enabled = areNotificationsEnabled();
+  
+  console.log("[Notification] Attempting to show:", { title, permission, enabled });
+  
   // Check both browser permission AND user preference
-  if (Notification.permission === "granted" && areNotificationsEnabled()) {
-    new Notification(title, {
-      icon: "/icons/icon-192x192.svg",
-      badge: "/icons/icon-72x72.svg",
-      ...options,
-    });
+  if (permission === "granted" && enabled) {
+    try {
+      new Notification(title, {
+        icon: "/icons/icon-192x192.svg",
+        badge: "/icons/icon-72x72.svg",
+        ...options,
+      });
+      console.log("[Notification] Notification shown successfully");
+    } catch (error) {
+      console.error("[Notification] Failed to show:", error);
+    }
+  } else {
+    console.log("[Notification] Skipped - permission:", permission, "enabled:", enabled);
   }
 }
 

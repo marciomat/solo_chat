@@ -19,6 +19,7 @@ export function MessageList({ room }: MessageListProps) {
   const markAsRead = useMarkAsRead(room);
   const lastMessageCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
+  const markedMessagesRef = useRef<Set<string>>(new Set());
   const myUsername = getUsername();
 
   // Auto-scroll to bottom and notify on new messages
@@ -35,12 +36,21 @@ export function MessageList({ room }: MessageListProps) {
       // 1. Not the initial load
       // 2. Tab is not focused
       // 3. Message is not from current user
+      console.log("[MessageList] New message check:", {
+        isInitialLoad: isInitialLoadRef.current,
+        documentHidden: document.hidden,
+        messageCount,
+        lastCount: lastMessageCountRef.current
+      });
+      
       if (!isInitialLoadRef.current && document.hidden) {
         const latestMessage = room.messages[messageCount - 1];
         if (latestMessage?.$isLoaded) {
           const senderName = latestMessage.senderName;
+          console.log("[MessageList] Message from:", senderName, "My username:", myUsername);
           // Don't notify for our own messages
           if (senderName !== myUsername) {
+            console.log("[MessageList] Triggering notification for:", senderName);
             notifyNewMessage(
               senderName || "Someone",
               latestMessage.text || (latestMessage.imageUrl ? "Sent an image" : "New message"),
@@ -59,14 +69,18 @@ export function MessageList({ room }: MessageListProps) {
     }
   }, [room, myUsername]);
 
-  // Mark visible messages as read
+  // Mark visible messages as read (only once per message)
   useEffect(() => {
     if (!room?.$isLoaded) return;
     if (!room.messages?.$isLoaded) return;
 
     // Mark all messages as read when viewing
     for (const message of room.messages) {
-      if (message?.$isLoaded) {
+      if (message?.$isLoaded && message.$jazz?.id) {
+        const messageId = message.$jazz.id;
+        // Skip if already marked by this component instance
+        if (markedMessagesRef.current.has(messageId)) continue;
+        markedMessagesRef.current.add(messageId);
         markAsRead(message);
       }
     }
