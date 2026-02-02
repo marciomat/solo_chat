@@ -9,6 +9,7 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: 'export',
   // Add empty turbopack config to suppress the error
   // Serwist uses webpack, so we need to explicitly allow this
   turbopack: {},
