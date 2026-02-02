@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,8 +21,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ChatRoomState } from "@/lib/jazz/hooks";
-import { MoreVertical, Trash2, LogOut, Bell, Share2 } from "lucide-react";
+import { MoreVertical, Trash2, LogOut, Bell, Share2, User } from "lucide-react";
+import { getUsername, setUsername } from "@/lib/utils/username";
 
 interface SettingsMenuProps {
   room: ChatRoomState;
@@ -31,6 +41,20 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+
+  // Load current username when dialog opens
+  useEffect(() => {
+    if (showNameDialog) {
+      setDisplayName(getUsername() || "");
+    }
+  }, [showNameDialog]);
+
+  const handleSaveName = () => {
+    setUsername(displayName);
+    setShowNameDialog(false);
+  };
 
   const handleDeleteAllMessages = async () => {
     if (!room?.$isLoaded) return;
@@ -76,6 +100,10 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setShowNameDialog(true)}>
+            <User className="mr-2 h-4 w-4" />
+            Change Name
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleShareLink}>
             <Share2 className="mr-2 h-4 w-4" />
             Share Link
@@ -140,6 +168,34 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Change name dialog */}
+      <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Display Name</DialogTitle>
+            <DialogDescription>
+              Set a name to identify yourself in this chat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your name (optional)"
+              maxLength={50}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNameDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveName}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

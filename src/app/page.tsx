@@ -1,17 +1,33 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MessageCircle, Plus, Link as LinkIcon } from "lucide-react";
+import { MessageCircle, Plus, Link as LinkIcon, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InstallPrompt } from "@/components/layout/InstallPrompt";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { getUsername, setUsername } from "@/lib/utils/username";
 
 export default function Home() {
   const router = useRouter();
   const [joinLink, setJoinLink] = useState("");
   const [linkError, setLinkError] = useState("");
+  const [displayName, setDisplayName] = useState("");
+
+  // Load saved username on mount
+  useEffect(() => {
+    const saved = getUsername();
+    if (saved) {
+      setDisplayName(saved);
+    }
+  }, []);
+
+  // Save username when it changes
+  const handleNameChange = useCallback((value: string) => {
+    setDisplayName(value);
+    setUsername(value);
+  }, []);
 
   const handleCreateChat = useCallback(() => {
     // Navigate to chat - room will be created automatically
@@ -70,6 +86,20 @@ export default function Home() {
               <br />
               No account needed.
             </p>
+          </div>
+
+          {/* Username (optional) */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Your name (optional)</span>
+            </div>
+            <Input
+              placeholder="Anonymous"
+              value={displayName}
+              onChange={(e) => handleNameChange(e.target.value)}
+              maxLength={30}
+            />
           </div>
 
           {/* Create New Chat */}

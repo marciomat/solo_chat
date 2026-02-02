@@ -9,6 +9,7 @@ import {
   ReadByList 
 } from "@/schema";
 import { getOrCreateDeviceId } from "@/lib/utils/device-id";
+import { getUsername } from "@/lib/utils/username";
 
 // Simplified type - use any for complex Jazz state to avoid deep type issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,7 +58,7 @@ export function useSendMessage(room: ChatRoomState) {
       }
 
       const deviceId = getOrCreateDeviceId();
-      const displayName = undefined; // Will be set from account root
+      const displayName = getUsername() || undefined;
 
       console.log("Pushing message to list");
 
