@@ -8,6 +8,8 @@ import { ChatRoomState, useMarkAsRead } from "@/lib/jazz/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { notifyNewMessage } from "@/lib/notifications/push";
 import { getUsername } from "@/lib/utils/username";
+import { useUnread } from "@/contexts/UnreadContext";
+import { useTabVisibility } from "@/hooks/use-tab-visibility";
 
 interface MessageListProps {
   room: ChatRoomState;
@@ -21,6 +23,8 @@ export function MessageList({ room }: MessageListProps) {
   const isInitialLoadRef = useRef(true);
   const markedMessagesRef = useRef<Set<string>>(new Set());
   const myUsername = getUsername();
+  const { addNewUnread } = useUnread();
+  const isVisible = useTabVisibility();
 
   // Auto-scroll to bottom and notify on new messages
   useEffect(() => {
@@ -45,17 +49,30 @@ export function MessageList({ room }: MessageListProps) {
       
       if (!isInitialLoadRef.current && document.hidden) {
         const latestMessage = room.messages[messageCount - 1];
+        console.log("[MessageList] Latest message:", latestMessage, "isLoaded:", latestMessage?.$isLoaded);
         if (latestMessage?.$isLoaded) {
           const senderName = latestMessage.senderName;
+          const messageId = latestMessage.$jazz?.id;
           console.log("[MessageList] Message from:", senderName, "My username:", myUsername);
           // Don't notify for our own messages
           if (senderName !== myUsername) {
             console.log("[MessageList] Triggering notification for:", senderName);
+            // Add to unread count (updates tab title)
+            if (messageId) {
+              addNewUnread(messageId);
+            }
             notifyNewMessage(
               senderName || "Someone",
               latestMessage.text || (latestMessage.imageUrl ? "Sent an image" : "New message"),
               window.location.href
             );
+          }
+        } else {
+          // Message not loaded yet - still add to unread since we know it's new
+          console.log("[MessageList] Message not loaded yet, adding to unread anyway");
+          const messageId = latestMessage?.$jazz?.id;
+          if (messageId) {
+            addNewUnread(messageId);
           }
         }
       }
@@ -67,10 +84,11 @@ export function MessageList({ room }: MessageListProps) {
     if (isInitialLoadRef.current && messageCount > 0) {
       isInitialLoadRef.current = false;
     }
-  }, [room, myUsername]);
+  }, [room, myUsername, addNewUnread]);
 
-  // Mark visible messages as read (only once per message)
+  // Mark visible messages as read (only when tab is visible)
   useEffect(() => {
+    if (!isVisible) return; // Don't mark as read when tab is hidden
     if (!room?.$isLoaded) return;
     if (!room.messages?.$isLoaded) return;
 
@@ -84,7 +102,7 @@ export function MessageList({ room }: MessageListProps) {
         markAsRead(message);
       }
     }
-  }, [room, markAsRead]);
+  }, [room, markAsRead, isVisible]);
 
   const handleImageClick = useCallback((imageUrl: string) => {
     setPreviewImage(imageUrl);
