@@ -58,7 +58,6 @@ export function useUnreadMessages(): UseUnreadMessagesReturn {
     const count = allUnreadIds.size;
     const baseTitle = "Solo Chat";
     
-    console.log("[useUnreadMessages] Updating title, count:", count);
     if (count > 0) {
       document.title = `(${count}) ${baseTitle}`;
     } else {
@@ -68,15 +67,12 @@ export function useUnreadMessages(): UseUnreadMessagesReturn {
 
   // Clear auto-added unreads when tab becomes visible
   useEffect(() => {
-    console.log("[useUnreadMessages] Visibility changed:", isVisible);
     if (isVisible && autoUnreadIds.size > 0) {
-      console.log("[useUnreadMessages] Clearing", autoUnreadIds.size, "auto-added unreads");
       setAutoUnreadIds(new Set());
     }
   }, [isVisible, autoUnreadIds.size]);
 
   const markAsUnread = useCallback((messageId: string) => {
-    console.log("[useUnreadMessages] markAsUnread (manual):", messageId);
     setManualUnreadIds((prev) => {
       const next = new Set(prev);
       next.add(messageId);
@@ -85,7 +81,6 @@ export function useUnreadMessages(): UseUnreadMessagesReturn {
   }, []);
 
   const markAsRead = useCallback((messageId: string) => {
-    console.log("[useUnreadMessages] markAsRead:", messageId);
     setManualUnreadIds((prev) => {
       const next = new Set(prev);
       next.delete(messageId);
@@ -104,11 +99,9 @@ export function useUnreadMessages(): UseUnreadMessagesReturn {
   }, []);
 
   const addNewUnread = useCallback((messageId: string) => {
-    console.log("[useUnreadMessages] addNewUnread (auto):", messageId);
     setAutoUnreadIds((prev) => {
       const next = new Set(prev);
       next.add(messageId);
-      console.log("[useUnreadMessages] New auto unread count:", next.size);
       return next;
     });
   }, []);

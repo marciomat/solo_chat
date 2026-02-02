@@ -36,27 +36,14 @@ export function MessageList({ room }: MessageListProps) {
     if (messageCount > lastMessageCountRef.current) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
       
-      // Notify only if:
-      // 1. Not the initial load
-      // 2. Tab is not focused
-      // 3. Message is not from current user
-      console.log("[MessageList] New message check:", {
-        isInitialLoad: isInitialLoadRef.current,
-        documentHidden: document.hidden,
-        messageCount,
-        lastCount: lastMessageCountRef.current
-      });
-      
+      // Notify only if not the initial load and tab is not focused
       if (!isInitialLoadRef.current && document.hidden) {
         const latestMessage = room.messages[messageCount - 1];
-        console.log("[MessageList] Latest message:", latestMessage, "isLoaded:", latestMessage?.$isLoaded);
         if (latestMessage?.$isLoaded) {
           const senderName = latestMessage.senderName;
           const messageId = latestMessage.$jazz?.id;
-          console.log("[MessageList] Message from:", senderName, "My username:", myUsername);
           // Don't notify for our own messages
           if (senderName !== myUsername) {
-            console.log("[MessageList] Triggering notification for:", senderName);
             // Add to unread count (updates tab title)
             if (messageId) {
               addNewUnread(messageId);
@@ -69,7 +56,6 @@ export function MessageList({ room }: MessageListProps) {
           }
         } else {
           // Message not loaded yet - still add to unread since we know it's new
-          console.log("[MessageList] Message not loaded yet, adding to unread anyway");
           const messageId = latestMessage?.$jazz?.id;
           if (messageId) {
             addNewUnread(messageId);
