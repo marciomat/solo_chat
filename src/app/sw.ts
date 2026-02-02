@@ -1,21 +1,51 @@
 /// <reference lib="webworker" />
-import { defaultCache } from "@serwist/next/worker";
-import { Serwist, type PrecacheEntry, type SerwistGlobalConfig } from "serwist";
+import { Serwist } from "serwist";
 
-declare global {
-  interface WorkerGlobalScope extends SerwistGlobalConfig {
-    __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
-  }
-}
-
-declare const self: ServiceWorkerGlobalScope & WorkerGlobalScope;
+declare const self: ServiceWorkerGlobalScope;
 
 const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
+  // For static export, we don't have build-time manifest injection
+  // So we use runtime caching instead
+  precacheEntries: [
+    { url: "/", revision: "1" },
+    { url: "/offline", revision: "1" },
+    { url: "/chat", revision: "1" },
+  ],
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
-  runtimeCaching: defaultCache,
+  navigationPreload: false, // Disabled for static export
+  runtimeCaching: [
+    {
+      // Cache page navigations
+      matcher: ({ request }) => request.mode === "navigate",
+      handler: "NetworkFirst" as const,
+      options: {
+        cacheName: "pages-cache",
+        networkTimeoutSeconds: 3,
+      },
+    },
+    {
+      // Cache static assets
+      matcher: ({ request }) =>
+        request.destination === "style" ||
+        request.destination === "script" ||
+        request.destination === "image" ||
+        request.destination === "font",
+      handler: "CacheFirst" as const,
+      options: {
+        cacheName: "assets-cache",
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+        },
+      },
+    },
+    {
+      // Cache API requests (Jazz sync) - network only, no caching
+      matcher: ({ url }) => url.hostname.includes("jazz"),
+      handler: "NetworkOnly" as const,
+    },
+  ],
   fallbacks: {
     entries: [
       {
@@ -32,8 +62,8 @@ self.addEventListener("push", (event) => {
   const title = data.title ?? "Solo Chat";
   const options: NotificationOptions = {
     body: data.body ?? "You have a new message",
-    icon: "/icons/icon-192x192.png",
-    badge: "/icons/icon-72x72.png",
+    icon: "/icons/icon-192x192.svg",
+    badge: "/icons/icon-72x72.svg",
     tag: data.tag ?? "solo-notification",
     data: {
       url: data.url ?? "/",

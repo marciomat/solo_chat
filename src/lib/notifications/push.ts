@@ -164,31 +164,74 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 import { areNotificationsEnabled } from "@/lib/utils/notificationSettings";
 
 /**
- * Send a local notification (for testing or fallback)
+ * Send a local notification using Service Worker (recommended approach)
+ * Falls back to new Notification() if service worker is not available
  */
-export function showLocalNotification(
+export async function showLocalNotification(
   title: string,
   options?: NotificationOptions
-): void {
-  const permission = typeof Notification !== "undefined" ? Notification.permission : "unavailable";
+): Promise<void> {
+  // Check both browser permission AND user preference
+  if (!("Notification" in window)) {
+    console.log("[Notification] Notifications not supported");
+    return;
+  }
+  
+  const permission = Notification.permission;
   const enabled = areNotificationsEnabled();
   
   console.log("[Notification] Attempting to show:", { title, permission, enabled });
   
-  // Check both browser permission AND user preference
-  if (permission === "granted" && enabled) {
+  if (permission !== "granted") {
+    console.log("[Notification] Skipped - permission not granted:", permission);
+    return;
+  }
+  
+  if (!enabled) {
+    console.log("[Notification] Skipped - disabled in settings");
+    return;
+  }
+
+  try {
+    // Prefer service worker notification (works better in PWAs)
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      // Use timeout to avoid hanging if SW isn't active
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))
+      ]);
+      
+      if (registration) {
+        await registration.showNotification(title, {
+          icon: "/icons/icon-192x192.svg",
+          badge: "/icons/icon-72x72.svg",
+          ...options,
+        });
+        console.log("[Notification] Shown via Service Worker");
+        return;
+      }
+    }
+    
+    // Fallback to regular notification
+    new Notification(title, {
+      icon: "/icons/icon-192x192.svg",
+      badge: "/icons/icon-72x72.svg",
+      ...options,
+    });
+    console.log("[Notification] Shown via Notification API");
+  } catch (error) {
+    console.error("[Notification] Failed to show:", error);
+    
+    // Final fallback: try regular notification
     try {
       new Notification(title, {
         icon: "/icons/icon-192x192.svg",
-        badge: "/icons/icon-72x72.svg",
         ...options,
       });
-      console.log("[Notification] Notification shown successfully");
-    } catch (error) {
-      console.error("[Notification] Failed to show:", error);
+      console.log("[Notification] Fallback notification shown");
+    } catch (fallbackError) {
+      console.error("[Notification] Fallback also failed:", fallbackError);
     }
-  } else {
-    console.log("[Notification] Skipped - permission:", permission, "enabled:", enabled);
   }
 }
 
