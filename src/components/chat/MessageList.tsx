@@ -6,6 +6,8 @@ import { MessageBubble } from "./MessageBubble";
 import { ImagePreview } from "./ImagePreview";
 import { ChatRoomState, useMarkAsRead } from "@/lib/jazz/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
+import { notifyNewMessage } from "@/lib/notifications/push";
+import { getUsername } from "@/lib/utils/username";
 
 interface MessageListProps {
   room: ChatRoomState;
@@ -16,18 +18,46 @@ export function MessageList({ room }: MessageListProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const markAsRead = useMarkAsRead(room);
   const lastMessageCountRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
+  const myUsername = getUsername();
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom and notify on new messages
   useEffect(() => {
     if (!room?.$isLoaded) return;
     if (!room.messages?.$isLoaded) return;
     
     const messageCount = room.messages.length ?? 0;
+    
     if (messageCount > lastMessageCountRef.current) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      
+      // Notify only if:
+      // 1. Not the initial load
+      // 2. Tab is not focused
+      // 3. Message is not from current user
+      if (!isInitialLoadRef.current && document.hidden) {
+        const latestMessage = room.messages[messageCount - 1];
+        if (latestMessage?.$isLoaded) {
+          const senderName = latestMessage.senderName;
+          // Don't notify for our own messages
+          if (senderName !== myUsername) {
+            notifyNewMessage(
+              senderName || "Someone",
+              latestMessage.text || (latestMessage.imageUrl ? "Sent an image" : "New message"),
+              window.location.href
+            );
+          }
+        }
+      }
+      
       lastMessageCountRef.current = messageCount;
     }
-  }, [room]);
+    
+    // After first render with messages, mark initial load complete
+    if (isInitialLoadRef.current && messageCount > 0) {
+      isInitialLoadRef.current = false;
+    }
+  }, [room, myUsername]);
 
   // Mark visible messages as read
   useEffect(() => {

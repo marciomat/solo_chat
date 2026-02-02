@@ -30,8 +30,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChatRoomState } from "@/lib/jazz/hooks";
-import { MoreVertical, Trash2, LogOut, Bell, Share2, User } from "lucide-react";
+import { MoreVertical, Trash2, LogOut, Bell, Share2, User, BellOff, BellRing } from "lucide-react";
 import { getUsername, setUsername } from "@/lib/utils/username";
+import { getNotificationPermission, enableLocalNotifications } from "@/lib/notifications/push";
+import { areNotificationsEnabled, setNotificationsEnabled } from "@/lib/utils/notificationSettings";
 
 interface SettingsMenuProps {
   room: ChatRoomState;
@@ -43,6 +45,17 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [notificationStatus, setNotificationStatus] = useState<string>("default");
+  const [notificationsOn, setNotificationsOn] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+
+  // Check notification permission and user preference on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setNotificationStatus(getNotificationPermission());
+      setNotificationsOn(areNotificationsEnabled());
+    }
+  }, []);
 
   // Load current username when dialog opens
   useEffect(() => {
@@ -54,6 +67,31 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   const handleSaveName = () => {
     setUsername(displayName);
     setShowNameDialog(false);
+  };
+
+  const handleEnableNotifications = async () => {
+    // If permission not yet granted, request it first
+    if (notificationStatus !== "granted") {
+      setNotificationLoading(true);
+      try {
+        const result = await enableLocalNotifications();
+        const newStatus = getNotificationPermission();
+        setNotificationStatus(newStatus);
+        if (result.success) {
+          setNotificationsEnabled(true);
+          setNotificationsOn(true);
+        } else if (result.reason) {
+          alert(result.reason);
+        }
+      } finally {
+        setNotificationLoading(false);
+      }
+    } else {
+      // Toggle notifications on/off
+      const newState = !notificationsOn;
+      setNotificationsEnabled(newState);
+      setNotificationsOn(newState);
+    }
   };
 
   const handleDeleteAllMessages = async () => {
@@ -108,9 +146,22 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
             <Share2 className="mr-2 h-4 w-4" />
             Share Link
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            <Bell className="mr-2 h-4 w-4" />
-            Notifications
+          <DropdownMenuItem 
+            onClick={handleEnableNotifications}
+            disabled={notificationLoading || notificationStatus === "denied"}
+          >
+            {notificationStatus === "denied" ? (
+              <BellOff className="mr-2 h-4 w-4 text-red-500" />
+            ) : notificationsOn ? (
+              <BellRing className="mr-2 h-4 w-4 text-green-500" />
+            ) : (
+              <BellOff className="mr-2 h-4 w-4" />
+            )}
+            {notificationLoading ? "Enabling..." : 
+             notificationStatus === "denied" ? "Notifications Blocked" :
+             notificationsOn ? "Notifications On" :
+             notificationStatus === "granted" ? "Notifications Off" :
+             "Enable Notifications"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

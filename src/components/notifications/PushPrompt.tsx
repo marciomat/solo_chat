@@ -39,10 +39,16 @@ export function PushPrompt({ onSubscribed }: PushPromptProps) {
   const handleEnable = async () => {
     setLoading(true);
     try {
-      const subscription = await subscribeToPush();
-      if (subscription) {
-        onSubscribed?.(subscription);
+      const result = await subscribeToPush();
+      if (result.success) {
+        onSubscribed?.(result.subscription);
         setDismissed(true);
+      } else {
+        // Still dismiss if permission was granted (local notifications work)
+        if (getNotificationPermission() === "granted") {
+          setDismissed(true);
+        }
+        console.warn("Push subscription result:", result.reason);
       }
     } catch (error) {
       console.error("Failed to enable notifications:", error);
