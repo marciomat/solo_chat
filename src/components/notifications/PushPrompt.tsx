@@ -1,0 +1,99 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Bell, X } from "lucide-react";
+import { 
+  isPushSupported, 
+  getNotificationPermission, 
+  subscribeToPush 
+} from "@/lib/notifications/push";
+import { getItem, setItem } from "@/lib/utils/storage";
+
+const DISMISSED_KEY = "push-prompt-dismissed";
+
+interface PushPromptProps {
+  onSubscribed?: (subscription: PushSubscription) => void;
+}
+
+export function PushPrompt({ onSubscribed }: PushPromptProps) {
+  const [dismissed, setDismissed] = useState(true);
+  const [isSupported, setIsSupported] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setIsSupported(isPushSupported());
+    setPermission(getNotificationPermission());
+    
+    const wasDismissed = getItem<boolean>(DISMISSED_KEY);
+    setDismissed(wasDismissed === true || getNotificationPermission() === "granted");
+  }, []);
+
+  // Don't show if not supported, already granted, or dismissed
+  if (!isSupported || permission === "granted" || permission === "denied" || dismissed) {
+    return null;
+  }
+
+  const handleEnable = async () => {
+    setLoading(true);
+    try {
+      const subscription = await subscribeToPush();
+      if (subscription) {
+        onSubscribed?.(subscription);
+        setDismissed(true);
+      }
+    } catch (error) {
+      console.error("Failed to enable notifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    setItem(DISMISSED_KEY, true);
+    setDismissed(true);
+  };
+
+  return (
+    <Card className="fixed bottom-4 left-4 right-4 z-50 shadow-lg border-primary/20">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-primary" />
+            <CardTitle className="text-base">Enable Notifications</CardTitle>
+          </div>
+          <Button
+            onClick={handleDismiss}
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <CardDescription>
+          Get notified when you receive new messages, even when the app is closed.
+        </CardDescription>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleEnable}
+            className="flex-1"
+            disabled={loading}
+          >
+            {loading ? "Enabling..." : "Enable Notifications"}
+          </Button>
+          <Button
+            onClick={handleDismiss}
+            variant="outline"
+          >
+            Not Now
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
