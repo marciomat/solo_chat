@@ -1,15 +1,16 @@
 /// <reference lib="webworker" />
-import { 
-  Serwist, 
-  NetworkFirst, 
-  StaleWhileRevalidate, 
-  CacheFirst, 
+import {
+  Serwist,
+  NetworkFirst,
+  StaleWhileRevalidate,
+  CacheFirst,
   NetworkOnly,
-  ExpirationPlugin 
+  ExpirationPlugin
 } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Initialize Serwist with runtime caching and lifecycle options
 const serwist = new Serwist({
   // For static export, we don't have build-time manifest injection
   // So we use runtime caching instead
@@ -87,42 +88,79 @@ const serwist = new Serwist({
 });
 
 // Push notification handler
+// IMPORTANT: event.waitUntil is crucial for iOS - Apple terminates subscriptions
+// after 3 "failed" (silent) attempts. Always show a notification!
 self.addEventListener("push", (event) => {
-  const data = event.data?.json() ?? {};
+  console.log("[SW] Push event received");
+
+  if (!event.data) {
+    console.warn("[SW] Push event has no data");
+    // Still show a notification to prevent Apple from marking this as "failed"
+    event.waitUntil(
+      self.registration.showNotification("Solo Chat", {
+        body: "New message",
+        icon: "/icons/icon-192x192.svg",
+        badge: "/icons/icon-72x72.svg",
+        tag: "solo-notification",
+      })
+    );
+    return;
+  }
+
+  const data = event.data.json();
+  console.log("[SW] Push notification data:", data);
+
   const title = data.title ?? "Solo Chat";
   const options: NotificationOptions = {
     body: data.body ?? "You have a new message",
     icon: "/icons/icon-192x192.svg",
     badge: "/icons/icon-72x72.svg",
-    tag: data.tag ?? "solo-notification",
+    tag: data.tag ?? "solo-notification", // Replaces old notifications instead of stacking
     data: {
       url: data.url ?? "/",
     },
+    // iOS-specific: ensure notification is visible
+    requireInteraction: false, // Don't require user action to dismiss
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  // event.waitUntil is the "Keep-Alive" signal for iOS
+  // This tells iOS the Service Worker is actively processing the push
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+      .then(() => {
+        console.log("[SW] Notification shown successfully");
+      })
+      .catch((error) => {
+        console.error("[SW] Failed to show notification:", error);
+      })
+  );
 });
 
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
+  console.log("[SW] Notification clicked");
   event.notification.close();
 
   const urlToOpen = event.notification.data?.url ?? "/";
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window" }).then((clientList) => {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      console.log("[SW] Found clients:", clientList.length);
+
       // Check if a window is already open
       for (const client of clientList) {
         if (client.url.includes(urlToOpen) && "focus" in client) {
+          console.log("[SW] Focusing existing window");
           return (client as WindowClient).focus();
         }
       }
+
       // Open new window if none found
       if (self.clients.openWindow) {
+        console.log("[SW] Opening new window");
         return self.clients.openWindow(urlToOpen);
       }
     })
   );
 });
-
 serwist.addEventListeners();
