@@ -42,8 +42,12 @@ export function PushPrompt({ room }: PushPromptProps) {
     if (!room?.$isLoaded) return;
     if (permission !== "granted") return;
 
+    let registered = false;
+
     // Try to get existing subscription and register it
     const registerExisting = async () => {
+      if (registered) return; // Prevent re-registration during same effect
+
       try {
         console.log("[Push] Checking for existing subscription...");
         if (!("serviceWorker" in navigator)) {
@@ -53,7 +57,8 @@ export function PushPrompt({ room }: PushPromptProps) {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
         console.log("[Push] Existing subscription:", subscription);
-        if (subscription) {
+        if (subscription && !registered) {
+          registered = true;
           console.log("[Push] Auto-registering existing subscription to room");
           const result = await registerPushSubscription(subscription);
           console.log("[Push] Auto-registration result:", result);
@@ -66,7 +71,7 @@ export function PushPrompt({ room }: PushPromptProps) {
     };
 
     registerExisting();
-  }, [room?.$isLoaded, permission, registerPushSubscription]);
+  }, [room?.$isLoaded, permission]);
 
   // Don't show if not supported, already granted, or dismissed
   if (!isSupported || permission === "granted" || permission === "denied" || dismissed) {
