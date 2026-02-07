@@ -35,18 +35,30 @@ export function PushPrompt({ room }: PushPromptProps) {
 
   // Auto-register subscription when room is loaded and permission is granted
   useEffect(() => {
+    console.log("[Push] Auto-register effect triggered:", {
+      roomLoaded: room?.$isLoaded,
+      permission
+    });
     if (!room?.$isLoaded) return;
     if (permission !== "granted") return;
 
     // Try to get existing subscription and register it
     const registerExisting = async () => {
       try {
-        if (!("serviceWorker" in navigator)) return;
+        console.log("[Push] Checking for existing subscription...");
+        if (!("serviceWorker" in navigator)) {
+          console.warn("[Push] Service worker not supported");
+          return;
+        }
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
+        console.log("[Push] Existing subscription:", subscription);
         if (subscription) {
           console.log("[Push] Auto-registering existing subscription to room");
-          await registerPushSubscription(subscription);
+          const result = await registerPushSubscription(subscription);
+          console.log("[Push] Auto-registration result:", result);
+        } else {
+          console.log("[Push] No existing subscription found");
         }
       } catch (err) {
         console.error("[Push] Error auto-registering:", err);
@@ -63,12 +75,18 @@ export function PushPrompt({ room }: PushPromptProps) {
 
   const handleEnable = async () => {
     setLoading(true);
+    console.log("[Push] handleEnable called");
     try {
       const result = await subscribeToPush();
+      console.log("[Push] subscribeToPush result:", result);
       if (result.success) {
         // Register subscription with Jazz room
+        console.log("[Push] Subscription successful, registering to room:", room?.$isLoaded);
         if (room?.$isLoaded) {
-          await registerPushSubscription(result.subscription);
+          const registered = await registerPushSubscription(result.subscription);
+          console.log("[Push] Registration result:", registered);
+        } else {
+          console.warn("[Push] Room not loaded, cannot register subscription");
         }
         setDismissed(true);
       } else {

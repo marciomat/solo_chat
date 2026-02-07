@@ -37,53 +37,65 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  * Returns: { success: true, subscription } or { success: false, reason: string }
  */
 export async function subscribeToPush(): Promise<{ success: true; subscription: PushSubscription } | { success: false; reason: string }> {
+  console.log("[Push] subscribeToPush called");
+
   // Check if notifications are supported
   if (!("Notification" in window)) {
+    console.warn("[Push] Notifications not supported");
     return { success: false, reason: "Notifications not supported in this browser" };
   }
 
   // Check if service worker is supported
   if (!("serviceWorker" in navigator)) {
+    console.warn("[Push] Service Worker not supported");
     return { success: false, reason: "Service Worker not supported" };
   }
 
   // Check if PushManager is supported
   if (!("PushManager" in window)) {
+    console.warn("[Push] PushManager not supported");
     return { success: false, reason: "Push notifications not supported" };
   }
 
   // Request permission
+  console.log("[Push] Requesting permission...");
   const permission = await Notification.requestPermission();
+  console.log("[Push] Permission result:", permission);
   if (permission !== "granted") {
     return { success: false, reason: permission === "denied" ? "Notification permission denied. Please enable in browser settings." : "Notification permission not granted" };
   }
 
   try {
     // Wait for service worker with longer timeout (30s for slow devices/connections)
+    console.log("[Push] Waiting for service worker...");
     const registration = await waitForServiceWorker(30000);
 
     if (!registration) {
       console.warn("[Push] Service worker not ready after 30s timeout");
       return { success: false, reason: "Push service unavailable. Local notifications enabled." };
     }
+    console.log("[Push] Service worker ready");
 
     // Get VAPID public key from environment
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    console.log("[Push] VAPID public key:", vapidPublicKey ? "present" : "missing");
     if (!vapidPublicKey) {
       // If no VAPID key, just grant permission for local notifications
       return { success: false, reason: "Push notifications not configured. Local notifications enabled." };
     }
 
     // Subscribe to push
+    console.log("[Push] Subscribing to push manager...");
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey).buffer as ArrayBuffer,
     });
+    console.log("[Push] Subscription successful:", subscription.endpoint);
 
     return { success: true, subscription };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to subscribe to push:", error);
+    console.error("[Push] Failed to subscribe:", error);
     return { success: false, reason: `Failed: ${message}` };
   }
 }
