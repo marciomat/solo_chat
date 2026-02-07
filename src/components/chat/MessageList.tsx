@@ -45,6 +45,7 @@ export function MessageList({ room }: MessageListProps) {
 
       if (!isInitialLoadRef.current && document.hidden) {
         const latestMessage = room.messages[messageCount - 1];
+        console.log("[Notification] Latest message loaded:", latestMessage?.$isLoaded);
         if (latestMessage?.$isLoaded) {
           const senderName = latestMessage.senderName;
           const senderId = latestMessage.senderId;
@@ -72,11 +73,18 @@ export function MessageList({ room }: MessageListProps) {
             console.log("[Notification] Skipping - message is from this device");
           }
         } else {
-          // Message not loaded yet - still add to unread since we know it's new
+          // Message not loaded yet - still try to notify with basic info
+          console.log("[Notification] Message not fully loaded yet");
           const messageId = latestMessage?.$jazz?.id;
           if (messageId) {
             addNewUnread(messageId);
           }
+          // Show basic notification anyway
+          notifyNewMessage(
+            "New Message",
+            "You have a new message",
+            window.location.href
+          );
         }
       }
       

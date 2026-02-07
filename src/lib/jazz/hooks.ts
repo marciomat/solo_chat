@@ -80,32 +80,56 @@ export function useSendMessage(room: ChatRoomState) {
       console.log("Message pushed successfully");
 
       // Trigger push notifications to other devices (fire and forget)
-      console.log("[Push] Checking subscriptions:", {
-        isLoaded: room.pushSubscriptions?.$isLoaded,
-        length: room.pushSubscriptions?.length,
-      });
-      if (room.pushSubscriptions?.$isLoaded) {
-        const subscriptions = extractPushSubscriptions(room.pushSubscriptions);
-        console.log("[Push] Extracted subscriptions:", subscriptions);
-        if (subscriptions.length > 0) {
-          const messagePreview = text.length > 100 ? text.substring(0, 100) + "..." : text;
-          const roomId = room.$jazz?.id || room.id;
-          triggerPushNotifications(
-            subscriptions,
-            {
-              title: displayName || "New Message",
-              body: messagePreview || "Sent an image",
-              tag: `solo-${roomId}`,
-              url: `/chat?room=${roomId}`,
-            },
-            deviceId
-          ).catch((err) => console.error("[Push] Background trigger failed:", err));
+      const timestamp = new Date().toISOString();
+      const attemptPushNotification = (retryCount = 0) => {
+        console.log(`[Push ${timestamp}] Attempt ${retryCount + 1}: Checking subscriptions:`, {
+          isLoaded: room.pushSubscriptions?.$isLoaded,
+          length: room.pushSubscriptions?.length,
+          currentDeviceId: deviceId
+        });
+
+        if (room.pushSubscriptions?.$isLoaded) {
+          const subscriptions = extractPushSubscriptions(room.pushSubscriptions);
+          console.log(`[Push ${timestamp}] Extracted subscriptions:`, subscriptions.map(s => ({
+            endpoint: s.endpoint.substring(0, 50) + "...",
+            deviceId: s.deviceId,
+            isCurrentDevice: s.deviceId === deviceId
+          })));
+
+          if (subscriptions.length > 0) {
+            const messagePreview = text.length > 100 ? text.substring(0, 100) + "..." : text;
+            const roomId = room.$jazz?.id || room.id;
+            triggerPushNotifications(
+              subscriptions,
+              {
+                title: displayName || "New Message",
+                body: messagePreview || "Sent an image",
+                tag: `solo-${roomId}`,
+                url: `/chat?room=${roomId}`,
+              },
+              deviceId
+            ).then(result => {
+              console.log(`[Push ${timestamp}] Result:`, result);
+            }).catch((err) => console.error(`[Push ${timestamp}] Background trigger failed:`, err));
+          } else {
+            console.log(`[Push ${timestamp}] No other devices in subscriptions after extraction`);
+            // If we have subscriptions in the list but none extracted and haven't retried yet, try again
+            if (retryCount === 0 && room.pushSubscriptions.length > 0) {
+              console.log(`[Push ${timestamp}] Retrying in 500ms (subscriptions exist but not loaded)`);
+              setTimeout(() => attemptPushNotification(1), 500);
+            }
+          }
         } else {
-          console.log("[Push] No other devices in subscriptions");
+          console.log(`[Push ${timestamp}] pushSubscriptions not loaded`);
+          // Retry once if subscriptions aren't loaded yet
+          if (retryCount === 0) {
+            console.log(`[Push ${timestamp}] Retrying in 500ms`);
+            setTimeout(() => attemptPushNotification(1), 500);
+          }
         }
-      } else {
-        console.log("[Push] pushSubscriptions not loaded");
-      }
+      };
+
+      attemptPushNotification();
 
       return true;
     },
@@ -130,8 +154,24 @@ function extractPushSubscriptions(pushSubscriptions: any): Array<{
   }> = [];
 
   try {
+    let skippedCount = 0;
+    let index = 0;
     for (const sub of pushSubscriptions) {
-      if (sub?.$isLoaded && sub.endpoint && sub.keys?.$isLoaded) {
+      const subLoaded = sub?.$isLoaded;
+      const hasEndpoint = !!sub?.endpoint;
+      const keysLoaded = sub?.keys?.$isLoaded;
+      const hasKeys = keysLoaded && !!sub?.keys?.p256dh && !!sub?.keys?.auth;
+
+      if (!subLoaded || !hasEndpoint || !keysLoaded || !hasKeys) {
+        console.log(`[Push] Skipping subscription ${index}:`, {
+          subLoaded,
+          hasEndpoint,
+          keysLoaded,
+          hasKeys,
+          deviceId: sub?.deviceId
+        });
+        skippedCount++;
+      } else {
         result.push({
           endpoint: sub.endpoint,
           keys: {
@@ -141,6 +181,11 @@ function extractPushSubscriptions(pushSubscriptions: any): Array<{
           deviceId: sub.deviceId,
         });
       }
+      index++;
+    }
+
+    if (skippedCount > 0) {
+      console.log(`[Push] Skipped ${skippedCount} subscriptions (not fully loaded)`);
     }
   } catch (err) {
     console.error("[Push] Error extracting subscriptions:", err);
@@ -284,7 +329,10 @@ export function useRegisterPushSubscription(room: ChatRoomState) {
         createdAt: Date.now(),
       };
 
-      console.log("[Push] Registering new subscription for device:", deviceId);
+      const timestamp = new Date().toISOString();
+      console.log(`[Push ${timestamp}] Registering new subscription for device:`, deviceId, {
+        endpoint: browserSubscription.endpoint.substring(0, 50) + "..."
+      });
       room.pushSubscriptions.$jazz.push(subscriptionData);
 
       return true;
