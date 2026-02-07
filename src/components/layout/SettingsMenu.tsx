@@ -29,10 +29,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChatRoomState } from "@/lib/jazz/hooks";
+import { ChatRoomState, useRegisterPushSubscription } from "@/lib/jazz/hooks";
 import { MoreVertical, Trash2, LogOut, Bell, Share2, User, BellOff, BellRing } from "lucide-react";
 import { getUsername, setUsername } from "@/lib/utils/username";
-import { getNotificationPermission, enableLocalNotifications } from "@/lib/notifications/push";
+import { getNotificationPermission, subscribeToPush } from "@/lib/notifications/push";
 import { areNotificationsEnabled, setNotificationsEnabled } from "@/lib/utils/notificationSettings";
 
 interface SettingsMenuProps {
@@ -41,6 +41,7 @@ interface SettingsMenuProps {
 
 export function SettingsMenu({ room }: SettingsMenuProps) {
   const router = useRouter();
+  const registerPushSubscription = useRegisterPushSubscription(room);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showNameDialog, setShowNameDialog] = useState(false);
@@ -70,27 +71,46 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   };
 
   const handleEnableNotifications = async () => {
-    // If permission not yet granted, request it first
-    if (notificationStatus !== "granted") {
-      setNotificationLoading(true);
-      try {
-        const result = await enableLocalNotifications();
-        const newStatus = getNotificationPermission();
-        setNotificationStatus(newStatus);
-        if (result.success) {
+    // If turning off, just toggle the preference
+    if (notificationsOn) {
+      setNotificationsEnabled(false);
+      setNotificationsOn(false);
+      return;
+    }
+
+    // If turning on, always subscribe to push (handles permission request if needed)
+    setNotificationLoading(true);
+    console.log("[Push] Requesting push subscription from settings...");
+    try {
+      const result = await subscribeToPush();
+      console.log("[Push] Subscribe result:", result);
+      const newStatus = getNotificationPermission();
+      setNotificationStatus(newStatus);
+      if (result.success) {
+        // Register with Jazz room
+        if (room?.$isLoaded) {
+          console.log("[Push] Registering subscription with Jazz room");
+          const registered = await registerPushSubscription(result.subscription);
+          console.log("[Push] Registration result:", registered);
+        } else {
+          console.warn("[Push] Room not loaded, cannot register subscription");
+        }
+        setNotificationsEnabled(true);
+        setNotificationsOn(true);
+      } else {
+        console.warn("[Push] Push subscription failed:", result.reason);
+        // If permission was granted but push failed (e.g., no VAPID), still enable local notifications
+        if (newStatus === "granted") {
           setNotificationsEnabled(true);
           setNotificationsOn(true);
         } else if (result.reason) {
           alert(result.reason);
         }
-      } finally {
-        setNotificationLoading(false);
       }
-    } else {
-      // Toggle notifications on/off
-      const newState = !notificationsOn;
-      setNotificationsEnabled(newState);
-      setNotificationsOn(newState);
+    } catch (error) {
+      console.error("[Push] Error in handleEnableNotifications:", error);
+    } finally {
+      setNotificationLoading(false);
     }
   };
 
