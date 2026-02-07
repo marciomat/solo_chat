@@ -7,7 +7,7 @@ import { ImagePreview } from "./ImagePreview";
 import { ChatRoomState, useMarkAsRead } from "@/lib/jazz/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { notifyNewMessage } from "@/lib/notifications/push";
-import { getUsername } from "@/lib/utils/username";
+import { getOrCreateDeviceId } from "@/lib/utils/device-id";
 import { useUnread } from "@/contexts/UnreadContext";
 import { useTabVisibility } from "@/hooks/use-tab-visibility";
 
@@ -22,7 +22,7 @@ export function MessageList({ room }: MessageListProps) {
   const lastMessageCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const markedMessagesRef = useRef<Set<string>>(new Set());
-  const myUsername = getUsername();
+  const myDeviceId = getOrCreateDeviceId();
   const { addNewUnread } = useUnread();
   const isVisible = useTabVisibility();
 
@@ -41,9 +41,10 @@ export function MessageList({ room }: MessageListProps) {
         const latestMessage = room.messages[messageCount - 1];
         if (latestMessage?.$isLoaded) {
           const senderName = latestMessage.senderName;
+          const senderId = latestMessage.senderId;
           const messageId = latestMessage.$jazz?.id;
-          // Don't notify for our own messages
-          if (senderName !== myUsername) {
+          // Don't notify for our own messages (compare device IDs)
+          if (senderId !== myDeviceId) {
             // Add to unread count (updates tab title)
             if (messageId) {
               addNewUnread(messageId);
