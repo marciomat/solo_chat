@@ -97,11 +97,16 @@ self.addEventListener("push", (event) => {
   const updateBadge = async () => {
     if ("setAppBadge" in navigator) {
       try {
-        // Get current notification count and increment
+        // Get current notification count (after notification is shown)
         const notifications = await self.registration.getNotifications();
-        const count = notifications.length + 1;
-        await navigator.setAppBadge(count);
-        console.log("[SW] App badge set to:", count);
+        const count = notifications.length;
+        if (count > 0) {
+          await navigator.setAppBadge(count);
+          console.log("[SW] App badge set to:", count);
+        } else {
+          await navigator.clearAppBadge();
+          console.log("[SW] App badge cleared");
+        }
       } catch (error) {
         console.warn("[SW] Failed to set app badge:", error);
       }
@@ -112,15 +117,12 @@ self.addEventListener("push", (event) => {
     console.warn("[SW] Push event has no data");
     // Still show a notification to prevent Apple from marking this as "failed"
     event.waitUntil(
-      Promise.all([
-        self.registration.showNotification("Solo Chat", {
-          body: "New message",
-          icon: "/icons/icon-192x192.svg",
-          badge: "/icons/icon-72x72.svg",
-          tag: "solo-notification",
-        }),
-        updateBadge(),
-      ])
+      self.registration.showNotification("Solo Chat", {
+        body: "New message",
+        icon: "/icons/icon-192x192.svg",
+        badge: "/icons/icon-72x72.svg",
+        tag: "solo-notification",
+      }).then(() => updateBadge())
     );
     return;
   }
@@ -144,16 +146,15 @@ self.addEventListener("push", (event) => {
   // event.waitUntil is the "Keep-Alive" signal for iOS
   // This tells iOS the Service Worker is actively processing the push
   event.waitUntil(
-    Promise.all([
-      self.registration.showNotification(title, options)
-        .then(() => {
-          console.log("[SW] Notification shown successfully");
-        })
-        .catch((error) => {
-          console.error("[SW] Failed to show notification:", error);
-        }),
-      updateBadge(),
-    ])
+    self.registration.showNotification(title, options)
+      .then(() => {
+        console.log("[SW] Notification shown successfully");
+        // Update badge after notification is shown
+        return updateBadge();
+      })
+      .catch((error) => {
+        console.error("[SW] Failed to show notification:", error);
+      })
   );
 });
 
