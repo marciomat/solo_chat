@@ -71,7 +71,7 @@ export function MessageList({ room }: MessageListProps) {
     if (isInitialLoadRef.current && messageCount > 0) {
       isInitialLoadRef.current = false;
     }
-  }, [room, myUsername, addNewUnread]);
+  }, [room, myDeviceId, addNewUnread]);
 
   // Mark visible messages as read (only when tab is visible)
   useEffect(() => {
