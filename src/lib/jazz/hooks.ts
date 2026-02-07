@@ -89,13 +89,14 @@ export function useSendMessage(room: ChatRoomState) {
         console.log("[Push] Extracted subscriptions:", subscriptions);
         if (subscriptions.length > 0) {
           const messagePreview = text.length > 100 ? text.substring(0, 100) + "..." : text;
+          const roomId = room.$jazz?.id || room.id;
           triggerPushNotifications(
             subscriptions,
             {
               title: displayName || "New Message",
               body: messagePreview || "Sent an image",
-              tag: `solo-${room.$id}`,
-              url: `/chat?room=${room.$id}`,
+              tag: `solo-${roomId}`,
+              url: `/chat?room=${roomId}`,
             },
             deviceId
           ).catch((err) => console.error("[Push] Background trigger failed:", err));

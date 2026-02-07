@@ -22,16 +22,20 @@ export async function sendPushNotification(
   vapidPublicKey: string,
   vapidPrivateKey: string
 ): Promise<PushResult> {
+  console.log("[Worker Push] Sending to:", subscription.endpoint.substring(0, 50) + "...");
   try {
     // Generate VAPID headers
+    console.log("[Worker Push] Generating VAPID headers...");
     const vapidHeaders = await generateVapidHeaders(
       subscription.endpoint,
       vapidPublicKey,
       vapidPrivateKey
     );
+    console.log("[Worker Push] VAPID headers generated");
 
     // Encrypt the payload
     const payloadString = JSON.stringify(payload);
+    console.log("[Worker Push] Encrypting payload...");
     const { ciphertext, salt, localPublicKey } = await encryptPayload(
       payloadString,
       subscription.keys.p256dh,
@@ -40,8 +44,10 @@ export async function sendPushNotification(
 
     // Build the encrypted body
     const body = buildEncryptedBody(ciphertext, salt, localPublicKey);
+    console.log("[Worker Push] Encrypted body size:", body.byteLength);
 
     // Send the push notification
+    console.log("[Worker Push] Sending HTTP request...");
     const response = await fetch(subscription.endpoint, {
       method: "POST",
       headers: {
@@ -55,7 +61,10 @@ export async function sendPushNotification(
       body: body,
     });
 
+    console.log("[Worker Push] Response status:", response.status);
+
     if (response.ok || response.status === 201) {
+      console.log("[Worker Push] Push successful!");
       return {
         success: true,
         endpoint: subscription.endpoint,
@@ -65,6 +74,7 @@ export async function sendPushNotification(
 
     // Handle specific error codes
     const errorText = await response.text().catch(() => "");
+    console.error("[Worker Push] Push failed:", response.status, errorText);
 
     // 404 or 410 means subscription is no longer valid
     if (response.status === 404 || response.status === 410) {
@@ -97,7 +107,7 @@ export async function sendPushNotification(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Push error:", errorMessage);
+    console.error("[Worker Push] Exception:", errorMessage, error);
 
     return {
       success: false,
