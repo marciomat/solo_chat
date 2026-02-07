@@ -354,10 +354,29 @@ export function useRegisterPushSubscription(room: ChatRoomState) {
       };
 
       const timestamp = new Date().toISOString();
-      console.log(`[Push ${timestamp}] Registering new subscription for device:`, deviceId, {
+      console.log(`[Push ${timestamp}] Adding new subscription for device:`, deviceId, {
         endpoint: browserSubscription.endpoint.substring(0, 50) + "..."
       });
       room.pushSubscriptions.$jazz.push(subscriptionData);
+
+      // Log final count for verification
+      console.log(`[Push ${timestamp}] Final subscription count:`, room.pushSubscriptions.length);
+
+      // Log all current subscriptions for debugging duplicates
+      try {
+        const allSubs = [];
+        for (const sub of room.pushSubscriptions) {
+          if (sub?.$isLoaded) {
+            allSubs.push({
+              deviceId: sub.deviceId,
+              endpoint: sub.endpoint.substring(0, 30) + "..."
+            });
+          }
+        }
+        console.log(`[Push ${timestamp}] All subscriptions:`, allSubs);
+      } catch (err) {
+        console.log(`[Push ${timestamp}] Could not enumerate all subscriptions`);
+      }
 
       return true;
     },

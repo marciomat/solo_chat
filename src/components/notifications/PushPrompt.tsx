@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bell, X } from "lucide-react";
@@ -24,6 +24,7 @@ export function PushPrompt({ room }: PushPromptProps) {
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
   const [loading, setLoading] = useState(false);
   const registerPushSubscription = useRegisterPushSubscription(room);
+  const hasAutoRegistered = useRef(false); // Session-level guard
 
   useEffect(() => {
     setIsSupported(isPushSupported());
@@ -38,18 +39,20 @@ export function PushPrompt({ room }: PushPromptProps) {
     console.log("[Push] Auto-register effect triggered:", {
       roomLoaded: room?.$isLoaded,
       pushSubscriptionsLoaded: room?.pushSubscriptions?.$isLoaded,
-      permission
+      permission,
+      hasAutoRegistered: hasAutoRegistered.current
     });
+
     if (!room?.$isLoaded) return;
     if (!room?.pushSubscriptions?.$isLoaded) return; // Wait for subscriptions to be fully loaded
     if (permission !== "granted") return;
-
-    let registered = false;
+    if (hasAutoRegistered.current) {
+      console.log("[Push] Already auto-registered this session, skipping");
+      return;
+    }
 
     // Try to get existing subscription and register it
     const registerExisting = async () => {
-      if (registered) return; // Prevent re-registration during same effect
-
       try {
         console.log("[Push] Checking for existing subscription...");
         if (!("serviceWorker" in navigator)) {
@@ -59,11 +62,11 @@ export function PushPrompt({ room }: PushPromptProps) {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
         console.log("[Push] Existing subscription:", subscription);
-        if (subscription && !registered) {
-          registered = true;
+        if (subscription) {
           console.log("[Push] Auto-registering existing subscription to room");
           const result = await registerPushSubscription(subscription);
           console.log("[Push] Auto-registration result:", result);
+          hasAutoRegistered.current = true; // Mark as registered for this session
         } else {
           console.log("[Push] No existing subscription found");
         }
@@ -73,7 +76,7 @@ export function PushPrompt({ room }: PushPromptProps) {
     };
 
     registerExisting();
-  }, [room?.$isLoaded, room?.pushSubscriptions?.$isLoaded, permission]);
+  }, [room?.$isLoaded, room?.pushSubscriptions?.$isLoaded, permission, registerPushSubscription]);
 
   // Don't show if not supported, already granted, or dismissed
   if (!isSupported || permission === "granted" || permission === "denied" || dismissed) {

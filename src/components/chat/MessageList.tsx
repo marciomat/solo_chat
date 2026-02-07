@@ -6,7 +6,7 @@ import { MessageBubble } from "./MessageBubble";
 import { ImagePreview } from "./ImagePreview";
 import { ChatRoomState, useMarkAsRead } from "@/lib/jazz/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
-import { notifyNewMessage } from "@/lib/notifications/push";
+import { notifyNewMessage, getNotificationPermission } from "@/lib/notifications/push";
 import { getOrCreateDeviceId } from "@/lib/utils/device-id";
 import { useUnread } from "@/contexts/UnreadContext";
 import { useTabVisibility } from "@/hooks/use-tab-visibility";
@@ -46,6 +46,11 @@ export function MessageList({ room }: MessageListProps) {
       if (!isInitialLoadRef.current && document.hidden) {
         const latestMessage = room.messages[messageCount - 1];
         console.log("[Notification] Latest message loaded:", latestMessage?.$isLoaded);
+
+        // Check if push notifications are enabled
+        const pushEnabled = getNotificationPermission() === "granted";
+        console.log("[Notification] Push enabled:", pushEnabled);
+
         if (latestMessage?.$isLoaded) {
           const senderName = latestMessage.senderName;
           const senderId = latestMessage.senderId;
@@ -59,32 +64,42 @@ export function MessageList({ room }: MessageListProps) {
 
           // Don't notify for our own messages (compare device IDs)
           if (senderId !== myDeviceId) {
-            console.log("[Notification] Triggering notification for message from:", senderName);
             // Add to unread count (updates tab title)
             if (messageId) {
               addNewUnread(messageId);
             }
-            notifyNewMessage(
-              senderName || "Someone",
-              latestMessage.text || (latestMessage.imageUrl ? "Sent an image" : "New message"),
-              window.location.href
-            );
+
+            // Only show local notification if push is NOT enabled
+            // (if push is enabled, service worker handles notifications)
+            if (!pushEnabled) {
+              console.log("[Notification] Showing local notification (push disabled)");
+              notifyNewMessage(
+                senderName || "Someone",
+                latestMessage.text || (latestMessage.imageUrl ? "Sent an image" : "New message"),
+                window.location.href
+              );
+            } else {
+              console.log("[Notification] Skipping local notification - service worker will handle it");
+            }
           } else {
             console.log("[Notification] Skipping - message is from this device");
           }
         } else {
-          // Message not loaded yet - still try to notify with basic info
+          // Message not loaded yet
           console.log("[Notification] Message not fully loaded yet");
           const messageId = latestMessage?.$jazz?.id;
           if (messageId) {
             addNewUnread(messageId);
           }
-          // Show basic notification anyway
-          notifyNewMessage(
-            "New Message",
-            "You have a new message",
-            window.location.href
-          );
+          // Only show local notification if push is NOT enabled
+          if (!pushEnabled) {
+            console.log("[Notification] Showing basic local notification (push disabled)");
+            notifyNewMessage(
+              "New Message",
+              "You have a new message",
+              window.location.href
+            );
+          }
         }
       }
       
