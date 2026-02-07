@@ -31,7 +31,11 @@ export function useChatRoom(roomId: string | undefined): ChatRoomState {
         },
       },
       participants: true,
-      pushSubscriptions: true,
+      pushSubscriptions: {
+        $each: {
+          keys: true,
+        },
+      },
     },
   });
 }
