@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ChatRoomState } from "@/lib/jazz/hooks";
 import { ThemeToggle } from "./ThemeToggle";
 import { SettingsMenu } from "./SettingsMenu";
+import { NotificationBadge } from "@/components/notifications/NotificationBadge";
+import { useUnread } from "@/contexts/UnreadContext";
 import { MessageCircle, Share2, Check } from "lucide-react";
 
 interface HeaderProps {
@@ -13,9 +15,10 @@ interface HeaderProps {
 
 export function Header({ room }: HeaderProps) {
   const [copied, setCopied] = useState(false);
-  
-  const participantCount = (room?.$isLoaded && room?.participants?.$isLoaded) 
-    ? [...room.participants].length 
+  const { unreadCount } = useUnread();
+
+  const participantCount = (room?.$isLoaded && room?.participants?.$isLoaded)
+    ? [...room.participants].length
     : 0;
   const roomName = (room?.$isLoaded && room?.name) || "Solo Chat";
 
@@ -48,8 +51,15 @@ export function Header({ room }: HeaderProps) {
       <div className="flex items-center justify-between h-14 px-4">
         {/* Left: App icon and name */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <MessageCircle className="w-4 h-4 text-primary-foreground" />
+          <div className="relative">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-primary-foreground" />
+            </div>
+            {unreadCount > 0 && (
+              <div className="absolute -top-1 -right-1">
+                <NotificationBadge count={unreadCount} />
+              </div>
+            )}
           </div>
           <div>
             <h1 className="font-semibold text-sm">{roomName}</h1>
