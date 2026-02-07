@@ -51,7 +51,7 @@ export function PushPrompt({ room }: PushPromptProps) {
       return;
     }
 
-    // Try to get existing subscription and register it
+    // Try to get existing subscription and register it, or create new one if missing
     const registerExisting = async () => {
       try {
         console.log("[Push] Checking for existing subscription...");
@@ -60,15 +60,29 @@ export function PushPrompt({ room }: PushPromptProps) {
           return;
         }
         const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
+        let subscription = await registration.pushManager.getSubscription();
         console.log("[Push] Existing subscription:", subscription);
+
         if (subscription) {
           console.log("[Push] Auto-registering existing subscription to room");
           const result = await registerPushSubscription(subscription);
           console.log("[Push] Auto-registration result:", result);
           hasAutoRegistered.current = true; // Mark as registered for this session
         } else {
-          console.log("[Push] No existing subscription found");
+          // No existing subscription - this can happen after iOS force-close
+          // Create a new one automatically since permission is already granted
+          console.log("[Push] No existing subscription found, creating new one...");
+          const result = await subscribeToPush();
+          console.log("[Push] New subscription result:", result);
+
+          if (result.success) {
+            console.log("[Push] Auto-registering new subscription to room");
+            const registered = await registerPushSubscription(result.subscription);
+            console.log("[Push] Auto-registration result:", registered);
+            hasAutoRegistered.current = true;
+          } else {
+            console.warn("[Push] Failed to create new subscription:", result.reason);
+          }
         }
       } catch (err) {
         console.error("[Push] Error auto-registering:", err);

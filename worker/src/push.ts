@@ -65,6 +65,9 @@ export async function sendPushNotification(
 
     if (response.ok || response.status === 201) {
       console.log("[Worker Push] Push successful!");
+      // Consume the response body to prevent deadlock warnings
+      // Cancel the body since we don't need to read it for successful responses
+      await response.body?.cancel();
       return {
         success: true,
         endpoint: subscription.endpoint,
