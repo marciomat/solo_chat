@@ -37,14 +37,28 @@ export function MessageList({ room }: MessageListProps) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
       
       // Notify only if not the initial load and tab is not focused
+      console.log("[Notification] New message check:", {
+        isInitialLoad: isInitialLoadRef.current,
+        isHidden: document.hidden,
+        messageCount
+      });
+
       if (!isInitialLoadRef.current && document.hidden) {
         const latestMessage = room.messages[messageCount - 1];
         if (latestMessage?.$isLoaded) {
           const senderName = latestMessage.senderName;
           const senderId = latestMessage.senderId;
           const messageId = latestMessage.$jazz?.id;
+
+          console.log("[Notification] Message details:", {
+            senderId,
+            myDeviceId,
+            isMyMessage: senderId === myDeviceId
+          });
+
           // Don't notify for our own messages (compare device IDs)
           if (senderId !== myDeviceId) {
+            console.log("[Notification] Triggering notification for message from:", senderName);
             // Add to unread count (updates tab title)
             if (messageId) {
               addNewUnread(messageId);
@@ -54,6 +68,8 @@ export function MessageList({ room }: MessageListProps) {
               latestMessage.text || (latestMessage.imageUrl ? "Sent an image" : "New message"),
               window.location.href
             );
+          } else {
+            console.log("[Notification] Skipping - message is from this device");
           }
         } else {
           // Message not loaded yet - still add to unread since we know it's new
