@@ -175,7 +175,7 @@ function ChatPageContent() {
   return (
     <>
       <ChatContainer room={room} />
-      <PushPrompt />
+      <PushPrompt room={room} />
     </>
   );
 }

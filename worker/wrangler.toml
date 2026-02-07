@@ -6,7 +6,16 @@ compatibility_date = "2024-01-01"
 [vars]
 JAZZ_PEER = "wss://cloud.jazz.tools"
 
+# Custom domain
+[[routes]]
+pattern = "solo-push.mmdev.win"
+custom_domain = true
+
 # Secrets (set via wrangler secret put):
 # - VAPID_PUBLIC_KEY
 # - VAPID_PRIVATE_KEY
-# - JAZZ_AUTH_SECRET (for bot account)
+#
+# Generate VAPID keys with: npm run generate-vapid
+# Then set them:
+#   wrangler secret put VAPID_PUBLIC_KEY
+#   wrangler secret put VAPID_PRIVATE_KEY

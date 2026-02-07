@@ -4,32 +4,57 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bell, X } from "lucide-react";
-import { 
-  isPushSupported, 
-  getNotificationPermission, 
-  subscribeToPush 
+import {
+  isPushSupported,
+  getNotificationPermission,
+  subscribeToPush,
 } from "@/lib/notifications/push";
 import { getItem, setItem } from "@/lib/utils/storage";
+import { useRegisterPushSubscription, ChatRoomState } from "@/lib/jazz/hooks";
 
 const DISMISSED_KEY = "push-prompt-dismissed";
 
 interface PushPromptProps {
-  onSubscribed?: (subscription: PushSubscription) => void;
+  room?: ChatRoomState;
 }
 
-export function PushPrompt({ onSubscribed }: PushPromptProps) {
+export function PushPrompt({ room }: PushPromptProps) {
   const [dismissed, setDismissed] = useState(true);
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
   const [loading, setLoading] = useState(false);
+  const registerPushSubscription = useRegisterPushSubscription(room);
 
   useEffect(() => {
     setIsSupported(isPushSupported());
     setPermission(getNotificationPermission());
-    
+
     const wasDismissed = getItem<boolean>(DISMISSED_KEY);
     setDismissed(wasDismissed === true || getNotificationPermission() === "granted");
   }, []);
+
+  // Auto-register subscription when room is loaded and permission is granted
+  useEffect(() => {
+    if (!room?.$isLoaded) return;
+    if (permission !== "granted") return;
+
+    // Try to get existing subscription and register it
+    const registerExisting = async () => {
+      try {
+        if (!("serviceWorker" in navigator)) return;
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          console.log("[Push] Auto-registering existing subscription to room");
+          await registerPushSubscription(subscription);
+        }
+      } catch (err) {
+        console.error("[Push] Error auto-registering:", err);
+      }
+    };
+
+    registerExisting();
+  }, [room?.$isLoaded, permission, registerPushSubscription]);
 
   // Don't show if not supported, already granted, or dismissed
   if (!isSupported || permission === "granted" || permission === "denied" || dismissed) {
@@ -41,7 +66,10 @@ export function PushPrompt({ onSubscribed }: PushPromptProps) {
     try {
       const result = await subscribeToPush();
       if (result.success) {
-        onSubscribed?.(result.subscription);
+        // Register subscription with Jazz room
+        if (room?.$isLoaded) {
+          await registerPushSubscription(result.subscription);
+        }
         setDismissed(true);
       } else {
         // Still dismiss if permission was granted (local notifications work)

@@ -5,7 +5,7 @@ export interface PushSubscriptionData {
     auth: string;
   };
   deviceId: string;
-  createdAt: number;
+  createdAt?: number;
 }
 
 export interface PushPayload {
@@ -19,5 +19,4 @@ export interface Env {
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
   JAZZ_PEER: string;
-  JAZZ_AUTH_SECRET: string;
 }

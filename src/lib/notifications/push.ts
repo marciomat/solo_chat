@@ -1,4 +1,26 @@
 /**
+ * Wait for service worker to be ready with a timeout
+ * @param timeoutMs - Timeout in milliseconds
+ * @returns ServiceWorkerRegistration or null on timeout
+ */
+async function waitForServiceWorker(timeoutMs: number): Promise<ServiceWorkerRegistration | null> {
+  if (!("serviceWorker" in navigator)) {
+    return null;
+  }
+
+  try {
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs))
+    ]);
+    return registration;
+  } catch (error) {
+    console.error("[SW] Error waiting for service worker:", error);
+    return null;
+  }
+}
+
+/**
  * Request notification permission
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
@@ -37,13 +59,13 @@ export async function subscribeToPush(): Promise<{ success: true; subscription: 
   }
 
   try {
-    // Wait for service worker with timeout
-    const registration = await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Service worker timeout")), 5000)
-      )
-    ]);
+    // Wait for service worker with longer timeout (30s for slow devices/connections)
+    const registration = await waitForServiceWorker(30000);
+
+    if (!registration) {
+      console.warn("[Push] Service worker not ready after 30s timeout");
+      return { success: false, reason: "Push service unavailable. Local notifications enabled." };
+    }
 
     // Get VAPID public key from environment
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -62,12 +84,6 @@ export async function subscribeToPush(): Promise<{ success: true; subscription: 
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to subscribe to push:", error);
-    
-    // If service worker timeout, still allow local notifications
-    if (message.includes("timeout")) {
-      return { success: false, reason: "Push service unavailable. Local notifications enabled." };
-    }
-    
     return { success: false, reason: `Failed: ${message}` };
   }
 }
@@ -93,7 +109,12 @@ export async function enableLocalNotifications(): Promise<{ success: boolean; re
  */
 export async function unsubscribeFromPush(): Promise<boolean> {
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await waitForServiceWorker(10000);
+    if (!registration) {
+      console.warn("[Push] Service worker not ready for unsubscribe");
+      return false;
+    }
+
     const subscription = await registration.pushManager.getSubscription();
 
     if (subscription) {
@@ -113,7 +134,11 @@ export async function unsubscribeFromPush(): Promise<boolean> {
  */
 export async function getPushSubscription(): Promise<PushSubscription | null> {
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await waitForServiceWorker(10000);
+    if (!registration) {
+      console.warn("[Push] Service worker not ready for getting subscription");
+      return null;
+    }
     return await registration.pushManager.getSubscription();
   } catch (error) {
     console.error("Failed to get push subscription:", error);
@@ -195,12 +220,9 @@ export async function showLocalNotification(
   try {
     // Prefer service worker notification (works better in PWAs)
     if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-      // Use timeout to avoid hanging if SW isn't active
-      const registration = await Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))
-      ]);
-      
+      // Use timeout to avoid hanging if SW isn't active (10s for slow devices)
+      const registration = await waitForServiceWorker(10000);
+
       if (registration) {
         await registration.showNotification(title, {
           icon: "/icons/icon-192x192.svg",
@@ -209,6 +231,8 @@ export async function showLocalNotification(
         });
         console.log("[Notification] Shown via Service Worker");
         return;
+      } else {
+        console.log("[Notification] Service Worker timeout, falling back to Notification API");
       }
     }
     

@@ -1,3 +1,14 @@
+# Environment
+This project is inside a `devbox` environment.
+So any tool that you need to install you MUST use the command:
+`devbox add <tool>`
+
+Example:
+`devbox add jq`
+
+> DO NOT install any tool using any other command!
+
+
 # Goal
 - Name of the app: solo
 - Develop a Web App that is compatible with PWA (Progressive Web App)

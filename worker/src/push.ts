@@ -1,42 +1,143 @@
 import type { PushSubscriptionData, PushPayload } from "./types";
+import {
+  generateVapidHeaders,
+  encryptPayload,
+  buildEncryptedBody,
+} from "./crypto";
 
-// Web Push implementation for Cloudflare Workers
-// Note: web-push npm package doesn't work directly in Workers
-// This is a simplified implementation using the Web Push protocol
+export interface PushResult {
+  success: boolean;
+  endpoint: string;
+  statusCode?: number;
+  error?: string;
+  shouldRemove?: boolean; // True if subscription is expired/invalid
+}
 
+/**
+ * Send a push notification to a single subscription
+ */
 export async function sendPushNotification(
   subscription: PushSubscriptionData,
   payload: PushPayload,
   vapidPublicKey: string,
   vapidPrivateKey: string
-): Promise<boolean> {
+): Promise<PushResult> {
   try {
-    // In a production environment, you would implement the full Web Push protocol
-    // or use a service like Cloudflare's native push support
-    
+    // Generate VAPID headers
+    const vapidHeaders = await generateVapidHeaders(
+      subscription.endpoint,
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+
+    // Encrypt the payload
+    const payloadString = JSON.stringify(payload);
+    const { ciphertext, salt, localPublicKey } = await encryptPayload(
+      payloadString,
+      subscription.keys.p256dh,
+      subscription.keys.auth
+    );
+
+    // Build the encrypted body
+    const body = buildEncryptedBody(ciphertext, salt, localPublicKey);
+
+    // Send the push notification
     const response = await fetch(subscription.endpoint, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "TTL": "86400",
-        // Note: Full VAPID implementation requires crypto operations
-        // that need to be adapted for Workers environment
+        "Authorization": vapidHeaders.authorization,
+        "Content-Type": "application/octet-stream",
+        "Content-Encoding": "aes128gcm",
+        "Content-Length": body.byteLength.toString(),
+        "TTL": "86400", // 24 hours
+        "Urgency": "high",
       },
-      body: JSON.stringify(payload),
+      body: body,
     });
 
-    if (!response.ok) {
-      console.error("Push failed:", response.status, await response.text());
-      
-      // Handle expired subscriptions (410 Gone)
-      if (response.status === 410) {
-        return false; // Indicate subscription should be removed
-      }
+    if (response.ok || response.status === 201) {
+      return {
+        success: true,
+        endpoint: subscription.endpoint,
+        statusCode: response.status,
+      };
     }
 
-    return response.ok;
+    // Handle specific error codes
+    const errorText = await response.text().catch(() => "");
+
+    // 404 or 410 means subscription is no longer valid
+    if (response.status === 404 || response.status === 410) {
+      return {
+        success: false,
+        endpoint: subscription.endpoint,
+        statusCode: response.status,
+        error: "Subscription expired or invalid",
+        shouldRemove: true,
+      };
+    }
+
+    // 429 means rate limited
+    if (response.status === 429) {
+      return {
+        success: false,
+        endpoint: subscription.endpoint,
+        statusCode: response.status,
+        error: "Rate limited",
+        shouldRemove: false,
+      };
+    }
+
+    return {
+      success: false,
+      endpoint: subscription.endpoint,
+      statusCode: response.status,
+      error: errorText || `HTTP ${response.status}`,
+      shouldRemove: false,
+    };
   } catch (error) {
-    console.error("Push error:", error);
-    return false;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Push error:", errorMessage);
+
+    return {
+      success: false,
+      endpoint: subscription.endpoint,
+      error: errorMessage,
+      shouldRemove: false,
+    };
   }
+}
+
+/**
+ * Send push notifications to multiple subscriptions
+ */
+export async function sendPushToAll(
+  subscriptions: PushSubscriptionData[],
+  payload: PushPayload,
+  vapidPublicKey: string,
+  vapidPrivateKey: string
+): Promise<{
+  results: PushResult[];
+  successCount: number;
+  failureCount: number;
+  expiredSubscriptions: string[];
+}> {
+  const results = await Promise.all(
+    subscriptions.map((sub) =>
+      sendPushNotification(sub, payload, vapidPublicKey, vapidPrivateKey)
+    )
+  );
+
+  const successCount = results.filter((r) => r.success).length;
+  const failureCount = results.filter((r) => !r.success).length;
+  const expiredSubscriptions = results
+    .filter((r) => r.shouldRemove)
+    .map((r) => r.endpoint);
+
+  return {
+    results,
+    successCount,
+    failureCount,
+    expiredSubscriptions,
+  };
 }
