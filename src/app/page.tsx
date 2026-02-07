@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { InstallPrompt } from "@/components/layout/InstallPrompt";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { getUsername, setUsername } from "@/lib/utils/username";
+import { getItem } from "@/lib/utils/storage";
+
+const LAST_ROOM_KEY = "last-room-id";
 
 export default function Home() {
   const router = useRouter();
@@ -15,13 +18,20 @@ export default function Home() {
   const [linkError, setLinkError] = useState("");
   const [displayName, setDisplayName] = useState("");
 
-  // Load saved username on mount
+  // Load saved username and auto-redirect to last room on mount
   useEffect(() => {
     const saved = getUsername();
     if (saved) {
       setDisplayName(saved);
     }
-  }, []);
+
+    // Auto-redirect to last visited room (if exists)
+    const lastRoomId = getItem<string>(LAST_ROOM_KEY);
+    if (lastRoomId) {
+      console.log("[Home] Auto-redirecting to last room:", lastRoomId);
+      router.push(`/chat?room=${encodeURIComponent(lastRoomId)}`);
+    }
+  }, [router]);
 
   // Save username when it changes
   const handleNameChange = useCallback((value: string) => {

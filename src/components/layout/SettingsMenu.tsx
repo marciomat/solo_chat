@@ -34,6 +34,9 @@ import { MoreVertical, Trash2, LogOut, Bell, Share2, User, BellOff, BellRing } f
 import { getUsername, setUsername } from "@/lib/utils/username";
 import { getNotificationPermission, subscribeToPush } from "@/lib/notifications/push";
 import { areNotificationsEnabled, setNotificationsEnabled } from "@/lib/utils/notificationSettings";
+import { removeItem } from "@/lib/utils/storage";
+
+const LAST_ROOM_KEY = "last-room-id";
 
 interface SettingsMenuProps {
   room: ChatRoomState;
@@ -131,7 +134,10 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   };
 
   const handleLeaveChat = () => {
-    // Just navigate back to home
+    // Clear saved room so it doesn't auto-redirect back
+    console.log("[Settings] Leaving chat - clearing saved room ID");
+    removeItem(LAST_ROOM_KEY);
+    // Navigate back to home
     router.push("/");
   };
 
@@ -228,7 +234,7 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Leave chat?</AlertDialogTitle>
             <AlertDialogDescription>
-              You can rejoin this chat anytime using the share link.
+              This will return you to the home screen and the app won't automatically open this chat on next launch. You can rejoin anytime using the share link.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

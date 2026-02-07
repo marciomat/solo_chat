@@ -17,6 +17,9 @@ import { getOrCreateDeviceId } from "@/lib/utils/device-id";
 import { useTabVisibility } from "@/hooks/use-tab-visibility";
 import { stopTitleBlink } from "@/lib/notifications/tab-blink";
 import { Skeleton } from "@/components/ui/skeleton";
+import { setItem } from "@/lib/utils/storage";
+
+const LAST_ROOM_KEY = "last-room-id";
 
 function ChatPageContent() {
   const searchParams = useSearchParams();
@@ -126,6 +129,14 @@ function ChatPageContent() {
 
   // Get the chat room
   const room = useChatRoom(roomId ?? undefined);
+
+  // Save the current room ID for auto-resume after app close
+  useEffect(() => {
+    if (roomId) {
+      console.log("[Chat] Saving room ID for auto-resume:", roomId);
+      setItem(LAST_ROOM_KEY, roomId);
+    }
+  }, [roomId]);
 
   // Add current device as participant if not already, and clean up duplicates
   useEffect(() => {
