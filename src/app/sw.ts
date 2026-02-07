@@ -93,16 +93,34 @@ const serwist = new Serwist({
 self.addEventListener("push", (event) => {
   console.log("[SW] Push event received");
 
+  // Helper to update app badge
+  const updateBadge = async () => {
+    if ("setAppBadge" in navigator) {
+      try {
+        // Get current notification count and increment
+        const notifications = await self.registration.getNotifications();
+        const count = notifications.length + 1;
+        await navigator.setAppBadge(count);
+        console.log("[SW] App badge set to:", count);
+      } catch (error) {
+        console.warn("[SW] Failed to set app badge:", error);
+      }
+    }
+  };
+
   if (!event.data) {
     console.warn("[SW] Push event has no data");
     // Still show a notification to prevent Apple from marking this as "failed"
     event.waitUntil(
-      self.registration.showNotification("Solo Chat", {
-        body: "New message",
-        icon: "/icons/icon-192x192.svg",
-        badge: "/icons/icon-72x72.svg",
-        tag: "solo-notification",
-      })
+      Promise.all([
+        self.registration.showNotification("Solo Chat", {
+          body: "New message",
+          icon: "/icons/icon-192x192.svg",
+          badge: "/icons/icon-72x72.svg",
+          tag: "solo-notification",
+        }),
+        updateBadge(),
+      ])
     );
     return;
   }
@@ -126,13 +144,16 @@ self.addEventListener("push", (event) => {
   // event.waitUntil is the "Keep-Alive" signal for iOS
   // This tells iOS the Service Worker is actively processing the push
   event.waitUntil(
-    self.registration.showNotification(title, options)
-      .then(() => {
-        console.log("[SW] Notification shown successfully");
-      })
-      .catch((error) => {
-        console.error("[SW] Failed to show notification:", error);
-      })
+    Promise.all([
+      self.registration.showNotification(title, options)
+        .then(() => {
+          console.log("[SW] Notification shown successfully");
+        })
+        .catch((error) => {
+          console.error("[SW] Failed to show notification:", error);
+        }),
+      updateBadge(),
+    ])
   );
 });
 
@@ -143,9 +164,29 @@ self.addEventListener("notificationclick", (event) => {
 
   const urlToOpen = event.notification.data?.url ?? "/";
 
+  // Clear or update badge when notification is clicked
+  const updateBadgeOnClick = async () => {
+    if ("setAppBadge" in navigator) {
+      try {
+        const notifications = await self.registration.getNotifications();
+        if (notifications.length === 0) {
+          await navigator.clearAppBadge();
+          console.log("[SW] App badge cleared");
+        } else {
+          await navigator.setAppBadge(notifications.length);
+          console.log("[SW] App badge updated to:", notifications.length);
+        }
+      } catch (error) {
+        console.warn("[SW] Failed to update app badge:", error);
+      }
+    }
+  };
+
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      console.log("[SW] Found clients:", clientList.length);
+    Promise.all([
+      updateBadgeOnClick(),
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+        console.log("[SW] Found clients:", clientList.length);
 
       // Check if a window is already open
       for (const client of clientList) {
@@ -160,7 +201,9 @@ self.addEventListener("notificationclick", (event) => {
         console.log("[SW] Opening new window");
         return self.clients.openWindow(urlToOpen);
       }
-    })
+    }),
+    ])
   );
 });
+
 serwist.addEventListeners();
