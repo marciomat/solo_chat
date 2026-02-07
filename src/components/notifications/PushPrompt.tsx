@@ -37,9 +37,11 @@ export function PushPrompt({ room }: PushPromptProps) {
   useEffect(() => {
     console.log("[Push] Auto-register effect triggered:", {
       roomLoaded: room?.$isLoaded,
+      pushSubscriptionsLoaded: room?.pushSubscriptions?.$isLoaded,
       permission
     });
     if (!room?.$isLoaded) return;
+    if (!room?.pushSubscriptions?.$isLoaded) return; // Wait for subscriptions to be fully loaded
     if (permission !== "granted") return;
 
     let registered = false;
@@ -71,7 +73,7 @@ export function PushPrompt({ room }: PushPromptProps) {
     };
 
     registerExisting();
-  }, [room?.$isLoaded, permission]);
+  }, [room?.$isLoaded, room?.pushSubscriptions?.$isLoaded, permission]);
 
   // Don't show if not supported, already granted, or dismissed
   if (!isSupported || permission === "granted" || permission === "denied" || dismissed) {

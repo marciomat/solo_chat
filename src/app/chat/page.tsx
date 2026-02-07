@@ -27,6 +27,7 @@ function ChatPageContent() {
   const [isSyncing, setIsSyncing] = useState(true);
   const isVisible = useTabVisibility();
   const roomInitialized = useRef(false);
+  const participantAdded = useRef(false);
 
   // Get params from URL
   const roomParam = searchParams.get("room"); // Room ID from URL (for joining)
@@ -126,17 +127,43 @@ function ChatPageContent() {
   // Get the chat room
   const room = useChatRoom(roomId ?? undefined);
 
-  // Add current device as participant if not already
+  // Add current device as participant if not already, and clean up duplicates
   useEffect(() => {
     if (!room?.$isLoaded) return;
     if (!room.participants?.$isLoaded) return;
-    
+    if (participantAdded.current) return; // Already processed
+
     const deviceId = getOrCreateDeviceId();
     const participantList = [...room.participants];
-    
-    if (!participantList.includes(deviceId)) {
-      room.participants.$jazz.push(deviceId);
+
+    // Find all duplicates
+    const seen = new Set<string>();
+    const duplicateIndices: number[] = [];
+    participantList.forEach((id, index) => {
+      if (seen.has(id)) {
+        duplicateIndices.push(index);
+      } else {
+        seen.add(id);
+      }
+    });
+
+    // Remove duplicates (in reverse order to maintain indices)
+    if (duplicateIndices.length > 0) {
+      console.log(`[Participants] Removing ${duplicateIndices.length} duplicate entries`);
+      for (let i = duplicateIndices.length - 1; i >= 0; i--) {
+        room.participants.$jazz.splice(duplicateIndices[i], 1);
+      }
     }
+
+    // Add current device if not already present
+    if (!seen.has(deviceId)) {
+      console.log("[Participants] Adding device to participants list:", deviceId);
+      room.participants.$jazz.push(deviceId);
+    } else {
+      console.log("[Participants] Device already in participants list:", deviceId);
+    }
+
+    participantAdded.current = true;
   }, [room]);
 
   // Handle tab visibility for title blinking

@@ -295,24 +295,44 @@ export function useRegisterPushSubscription(room: ChatRoomState) {
         return false;
       }
 
-      // Remove ALL existing subscriptions for this device (in case of duplicates)
+      // Remove ALL existing subscriptions for this device or with same endpoint (in case of duplicates)
       const indicesToRemove: number[] = [];
       try {
         const subs = room.pushSubscriptions;
+        console.log("[Push] Scanning subscriptions for removal:", {
+          totalCount: subs.length,
+          currentDeviceId: deviceId,
+          newEndpoint: browserSubscription.endpoint.substring(0, 50) + "..."
+        });
+
         for (let i = 0; i < subs.length; i++) {
           const sub = subs[i];
-          if (sub?.$isLoaded && sub.deviceId === deviceId) {
-            indicesToRemove.push(i);
+          // Only check subscriptions that are fully loaded
+          if (sub?.$isLoaded && sub.endpoint && sub.deviceId) {
+            // Remove if same device OR same endpoint
+            if (sub.deviceId === deviceId || sub.endpoint === browserSubscription.endpoint) {
+              indicesToRemove.push(i);
+              console.log("[Push] Found existing subscription to remove:", {
+                index: i,
+                deviceId: sub.deviceId,
+                endpoint: sub.endpoint.substring(0, 50) + "...",
+                matchedBy: sub.deviceId === deviceId ? "deviceId" : "endpoint"
+              });
+            }
+          } else if (sub) {
+            console.log("[Push] Skipping subscription at index", i, "- not fully loaded");
           }
         }
-      } catch {
-        // Iteration may fail if list is in a weird state
+
+        console.log("[Push] Total subscriptions to remove:", indicesToRemove.length);
+      } catch (err) {
+        console.error("[Push] Error finding old subscriptions:", err);
       }
 
       // Remove old subscriptions (in reverse order to maintain indices)
       for (let i = indicesToRemove.length - 1; i >= 0; i--) {
         const idx = indicesToRemove[i];
-        console.log("[Push] Removing old subscription at index:", idx);
+        console.log("[Push] Removing subscription at index:", idx);
         room.pushSubscriptions.$jazz.splice(idx, 1);
       }
 
