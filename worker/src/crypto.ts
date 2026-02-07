@@ -53,102 +53,51 @@ export async function generateVapidHeaders(
   const payloadB64 = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Import private key for signing
+  // Import private key for signing using JWK format
+  // For EC JWK, we need x, y (from public key) and d (private key)
   const privateKeyBytes = base64UrlDecode(vapidPrivateKey);
+  const publicKeyBytes = base64UrlDecode(vapidPublicKey);
+
+  // Public key is uncompressed: 0x04 + x (32 bytes) + y (32 bytes)
+  const x = publicKeyBytes.slice(1, 33);
+  const y = publicKeyBytes.slice(33, 65);
+
   const privateKey = await crypto.subtle.importKey(
-    "pkcs8",
-    convertRawPrivateKeyToPKCS8(privateKeyBytes),
+    "jwk",
+    {
+      kty: "EC",
+      crv: "P-256",
+      x: base64UrlEncode(x),
+      y: base64UrlEncode(y),
+      d: base64UrlEncode(privateKeyBytes),
+      ext: true,
+    },
     { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["sign"]
   );
 
   // Sign the token
+  // Per RFC 7518 Section 3.4, ES256 signatures MUST be in IEEE P1363 format
+  // WebCrypto returns ECDSA signatures in IEEE P1363 format (raw r||s)
+  // For P-256, this is always 64 bytes (32 bytes r + 32 bytes s)
   const signature = await crypto.subtle.sign(
     { name: "ECDSA", hash: "SHA-256" },
     privateKey,
     new TextEncoder().encode(unsignedToken)
   );
 
-  // Convert signature from DER to raw format for JWT
-  const signatureB64 = base64UrlEncode(convertDerToRaw(new Uint8Array(signature)));
+  const sigBytes = new Uint8Array(signature);
+  console.log("[VAPID] Signature length:", sigBytes.length, "bytes (expected 64 for P-256)");
+
+  // Base64url encode the signature
+  const signatureB64 = base64UrlEncode(sigBytes);
   const jwt = `${unsignedToken}.${signatureB64}`;
 
   return {
     authorization: `vapid t=${jwt}, k=${vapidPublicKey}`,
     cryptoKey: `p256ecdsa=${vapidPublicKey}`,
   };
-}
-
-/**
- * Convert raw 32-byte private key to PKCS8 format
- */
-function convertRawPrivateKeyToPKCS8(rawKey: Uint8Array): ArrayBuffer {
-  // PKCS8 wrapper for P-256 EC private key
-  const pkcs8Header = new Uint8Array([
-    0x30, 0x81, 0x87, // SEQUENCE
-    0x02, 0x01, 0x00, // INTEGER 0 (version)
-    0x30, 0x13, // SEQUENCE (algorithm identifier)
-    0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // OID 1.2.840.10045.2.1 (ecPublicKey)
-    0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // OID 1.2.840.10045.3.1.7 (P-256)
-    0x04, 0x6d, // OCTET STRING
-    0x30, 0x6b, // SEQUENCE
-    0x02, 0x01, 0x01, // INTEGER 1 (version)
-    0x04, 0x20, // OCTET STRING (32 bytes for private key)
-  ]);
-
-  // For simplicity, we'll construct a minimal PKCS8 without the public key
-  const result = new Uint8Array(pkcs8Header.length + rawKey.length);
-  result.set(pkcs8Header);
-  result.set(rawKey, pkcs8Header.length);
-
-  return result.buffer;
-}
-
-/**
- * Convert DER signature to raw format (R || S)
- */
-function convertDerToRaw(der: Uint8Array): Uint8Array {
-  // DER format: 0x30 [total-length] 0x02 [r-length] [r] 0x02 [s-length] [s]
-  // Raw format: [r (32 bytes)] [s (32 bytes)]
-
-  let offset = 2; // Skip 0x30 and length
-
-  // Read R
-  if (der[offset] !== 0x02) throw new Error("Invalid DER signature");
-  offset++;
-  const rLength = der[offset];
-  offset++;
-  const rSlice = der.slice(offset, offset + rLength);
-  offset += rLength;
-
-  // Read S
-  if (der[offset] !== 0x02) throw new Error("Invalid DER signature");
-  offset++;
-  const sLength = der[offset];
-  offset++;
-  const sSlice = der.slice(offset, offset + sLength);
-
-  // Pad or trim to 32 bytes
-  const r = padOrTrim(rSlice, 32);
-  const s = padOrTrim(sSlice, 32);
-
-  const raw = new Uint8Array(64);
-  raw.set(r, 0);
-  raw.set(s, 32);
-  return raw;
-}
-
-function padOrTrim(bytes: Uint8Array, length: number): Uint8Array {
-  if (bytes.length === length) return bytes;
-  if (bytes.length > length) {
-    // Trim leading zeros
-    return bytes.slice(bytes.length - length);
-  }
-  // Pad with leading zeros
-  const padded = new Uint8Array(length);
-  padded.set(bytes, length - bytes.length);
-  return padded;
 }
 
 /**

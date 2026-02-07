@@ -74,6 +74,12 @@ export async function triggerPushNotifications(
     }
 
     console.log(`[Push] Sent: ${result.sent}, Failed: ${result.failed}`);
+
+    // Log expired subscriptions (these should be cleaned up by devices on next registration)
+    if (result.expiredEndpoints && result.expiredEndpoints.length > 0) {
+      console.log(`[Push] ${result.expiredEndpoints.length} expired subscriptions reported by worker`);
+    }
+
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

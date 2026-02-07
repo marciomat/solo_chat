@@ -246,19 +246,25 @@ export function useRegisterPushSubscription(room: ChatRoomState) {
         return false;
       }
 
-      // Check if this device already has a subscription
-      let existingIndex = -1;
+      // Remove ALL existing subscriptions for this device (in case of duplicates)
+      const indicesToRemove: number[] = [];
       try {
         const subs = room.pushSubscriptions;
         for (let i = 0; i < subs.length; i++) {
           const sub = subs[i];
           if (sub?.$isLoaded && sub.deviceId === deviceId) {
-            existingIndex = i;
-            break;
+            indicesToRemove.push(i);
           }
         }
       } catch {
         // Iteration may fail if list is in a weird state
+      }
+
+      // Remove old subscriptions (in reverse order to maintain indices)
+      for (let i = indicesToRemove.length - 1; i >= 0; i--) {
+        const idx = indicesToRemove[i];
+        console.log("[Push] Removing old subscription at index:", idx);
+        room.pushSubscriptions.$jazz.splice(idx, 1);
       }
 
       // Create the keys object
@@ -270,7 +276,7 @@ export function useRegisterPushSubscription(room: ChatRoomState) {
         { owner }
       );
 
-      // Create or update subscription
+      // Create new subscription (old ones were removed above)
       const subscriptionData = {
         endpoint: browserSubscription.endpoint,
         keys,
@@ -278,20 +284,8 @@ export function useRegisterPushSubscription(room: ChatRoomState) {
         createdAt: Date.now(),
       };
 
-      if (existingIndex >= 0) {
-        // Update existing subscription
-        console.log("[Push] Updating existing subscription for device:", deviceId);
-        const existing = room.pushSubscriptions[existingIndex];
-        if (existing?.$jazz) {
-          existing.$jazz.set("endpoint", browserSubscription.endpoint);
-          existing.$jazz.set("keys", keys);
-          existing.$jazz.set("createdAt", Date.now());
-        }
-      } else {
-        // Add new subscription
-        console.log("[Push] Registering new subscription for device:", deviceId);
-        room.pushSubscriptions.$jazz.push(subscriptionData);
-      }
+      console.log("[Push] Registering new subscription for device:", deviceId);
+      room.pushSubscriptions.$jazz.push(subscriptionData);
 
       return true;
     },
