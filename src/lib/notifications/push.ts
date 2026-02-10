@@ -99,7 +99,8 @@ export async function subscribeToPush(): Promise<{ success: true; subscription: 
     return { success: true, subscription };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("[Push] Failed to subscribe:", error);
+    // Log as warning instead of error - this can happen due to push service unavailability
+    console.warn("[Push] Could not subscribe to push service:", message);
     return { success: false, reason: `Failed: ${message}` };
   }
 }

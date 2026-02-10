@@ -66,6 +66,7 @@ export function PushPrompt({ room }: PushPromptProps) {
         console.log("[Push] Checking for existing subscription...");
         if (!("serviceWorker" in navigator)) {
           console.warn("[Push] Service worker not supported");
+          hasAutoRegistered.current = true;
           return;
         }
         const registration = await navigator.serviceWorker.ready;
@@ -78,11 +79,18 @@ export function PushPrompt({ room }: PushPromptProps) {
           console.log("[Push] Auto-registration result:", result);
           hasAutoRegistered.current = true; // Mark as registered for this session
         } else {
+          // Check if VAPID key is configured before attempting to create subscription
+          const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          if (!vapidPublicKey) {
+            console.log("[Push] No VAPID key configured, skipping auto-subscription");
+            hasAutoRegistered.current = true;
+            return;
+          }
+
           // No existing subscription - this can happen after iOS force-close
           // Create a new one automatically since permission is already granted
           console.log("[Push] No existing subscription found, creating new one...");
           const result = await subscribeToPush();
-          console.log("[Push] New subscription result:", result);
 
           if (result.success) {
             console.log("[Push] Auto-registering new subscription to room");
@@ -90,11 +98,17 @@ export function PushPrompt({ room }: PushPromptProps) {
             console.log("[Push] Auto-registration result:", registered);
             hasAutoRegistered.current = true;
           } else {
-            console.warn("[Push] Failed to create new subscription:", result.reason);
+            // Failed to create subscription - this can happen due to network issues,
+            // push service being unavailable, or browser restrictions
+            console.log("[Push] Could not create push subscription (will use local notifications):", result.reason);
+            // Mark as attempted to prevent continuous retries
+            hasAutoRegistered.current = true;
           }
         }
       } catch (err) {
         console.error("[Push] Error auto-registering:", err);
+        // Mark as attempted even on error to prevent continuous retries
+        hasAutoRegistered.current = true;
       }
     };
 
