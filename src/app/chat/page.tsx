@@ -31,6 +31,7 @@ function ChatPageContent() {
   const isVisible = useTabVisibility();
   const roomInitialized = useRef(false);
   const participantAdded = useRef(false);
+  const lastParticipantCount = useRef(0);
 
   // Get params from URL
   const roomParam = searchParams.get("room"); // Room ID from URL (for joining)
@@ -142,10 +143,17 @@ function ChatPageContent() {
   useEffect(() => {
     if (!room?.$isLoaded) return;
     if (!room.participants?.$isLoaded) return;
-    if (participantAdded.current) return; // Already processed
 
     const deviceId = getOrCreateDeviceId();
     const participantList = [...room.participants];
+    const currentCount = participantList.length;
+
+    // Only run if participant count changed or first time
+    if (lastParticipantCount.current !== 0 && lastParticipantCount.current === currentCount && participantAdded.current) {
+      return;
+    }
+
+    lastParticipantCount.current = currentCount;
 
     // Find all duplicates
     const seen = new Set<string>();
@@ -160,21 +168,21 @@ function ChatPageContent() {
 
     // Remove duplicates (in reverse order to maintain indices)
     if (duplicateIndices.length > 0) {
-      console.log(`[Participants] Removing ${duplicateIndices.length} duplicate entries`);
+      console.log(`[Participants] Found ${participantList.length} total, ${seen.size} unique - removing ${duplicateIndices.length} duplicate entries`);
       for (let i = duplicateIndices.length - 1; i >= 0; i--) {
         room.participants.$jazz.splice(duplicateIndices[i], 1);
       }
     }
 
-    // Add current device if not already present
-    if (!seen.has(deviceId)) {
+    // Add current device if not already present (only once per session)
+    if (!participantAdded.current && !seen.has(deviceId)) {
       console.log("[Participants] Adding device to participants list:", deviceId);
       room.participants.$jazz.push(deviceId);
-    } else {
+      participantAdded.current = true;
+    } else if (!participantAdded.current) {
       console.log("[Participants] Device already in participants list:", deviceId);
+      participantAdded.current = true;
     }
-
-    participantAdded.current = true;
   }, [room]);
 
   // Handle tab visibility for title blinking

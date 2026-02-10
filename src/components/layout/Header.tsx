@@ -14,8 +14,9 @@ interface HeaderProps {
 export function Header({ room }: HeaderProps) {
   const [copied, setCopied] = useState(false);
   
-  const participantCount = (room?.$isLoaded && room?.participants?.$isLoaded) 
-    ? [...room.participants].length 
+  // Count unique participants (deduplicate in case of sync issues)
+  const participantCount = (room?.$isLoaded && room?.participants?.$isLoaded)
+    ? new Set([...room.participants]).size
     : 0;
   const roomName = (room?.$isLoaded && room?.name) || "Solo Chat";
 

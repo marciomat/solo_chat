@@ -11,6 +11,7 @@ import {
 } from "@/lib/notifications/push";
 import { getItem, setItem } from "@/lib/utils/storage";
 import { useRegisterPushSubscription, ChatRoomState } from "@/lib/jazz/hooks";
+import { areNotificationsEnabled } from "@/lib/utils/notificationSettings";
 
 const DISMISSED_KEY = "push-prompt-dismissed";
 
@@ -34,18 +35,26 @@ export function PushPrompt({ room }: PushPromptProps) {
     setDismissed(wasDismissed === true || getNotificationPermission() === "granted");
   }, []);
 
-  // Auto-register subscription when room is loaded and permission is granted
+  // Auto-register subscription when room is loaded and permission is granted AND notifications are enabled
   useEffect(() => {
+    // Check if notifications are explicitly enabled in user settings
+    const notificationsEnabled = areNotificationsEnabled();
+
     console.log("[Push] Auto-register effect triggered:", {
       roomLoaded: room?.$isLoaded,
       pushSubscriptionsLoaded: room?.pushSubscriptions?.$isLoaded,
       permission,
+      notificationsEnabled,
       hasAutoRegistered: hasAutoRegistered.current
     });
 
     if (!room?.$isLoaded) return;
     if (!room?.pushSubscriptions?.$isLoaded) return; // Wait for subscriptions to be fully loaded
     if (permission !== "granted") return;
+    if (!notificationsEnabled) {
+      console.log("[Push] Notifications disabled in settings, skipping auto-register");
+      return;
+    }
     if (hasAutoRegistered.current) {
       console.log("[Push] Already auto-registered this session, skipping");
       return;

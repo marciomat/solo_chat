@@ -7,9 +7,9 @@ const NOTIFICATIONS_ENABLED_KEY = "solo-notifications-enabled";
 export function areNotificationsEnabled(): boolean {
   if (typeof window === "undefined") return false;
   const stored = localStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
-  // Default to true if permission is granted and not explicitly disabled
+  // Default to false - user must explicitly enable notifications
   if (stored === null) {
-    return "Notification" in window && Notification.permission === "granted";
+    return false;
   }
   return stored === "true";
 }

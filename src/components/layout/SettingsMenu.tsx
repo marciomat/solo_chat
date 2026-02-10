@@ -32,7 +32,7 @@ import {
 import { ChatRoomState, useRegisterPushSubscription } from "@/lib/jazz/hooks";
 import { MoreVertical, Trash2, LogOut, Bell, Share2, User, BellOff, BellRing } from "lucide-react";
 import { getUsername, setUsername } from "@/lib/utils/username";
-import { getNotificationPermission, subscribeToPush } from "@/lib/notifications/push";
+import { getNotificationPermission, subscribeToPush, unsubscribeFromPush } from "@/lib/notifications/push";
 import { areNotificationsEnabled, setNotificationsEnabled } from "@/lib/utils/notificationSettings";
 import { removeItem } from "@/lib/utils/storage";
 
@@ -53,11 +53,18 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   const [notificationsOn, setNotificationsOn] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
 
-  // Check notification permission and user preference on mount
+  // Check notification permission and user preference on mount and when dropdown state changes
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setNotificationStatus(getNotificationPermission());
-      setNotificationsOn(areNotificationsEnabled());
+      const checkStatus = () => {
+        setNotificationStatus(getNotificationPermission());
+        setNotificationsOn(areNotificationsEnabled());
+      };
+      checkStatus();
+
+      // Also check when window regains focus (user might have changed browser settings)
+      window.addEventListener("focus", checkStatus);
+      return () => window.removeEventListener("focus", checkStatus);
     }
   }, []);
 
@@ -74,10 +81,14 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   };
 
   const handleEnableNotifications = async () => {
-    // If turning off, just toggle the preference
+    // If turning off, disable preference and unsubscribe from push
     if (notificationsOn) {
+      console.log("[Notifications] Disabling notifications...");
       setNotificationsEnabled(false);
       setNotificationsOn(false);
+      // Unsubscribe from push to prevent service worker notifications
+      await unsubscribeFromPush();
+      console.log("[Notifications] Unsubscribed from push");
       return;
     }
 
