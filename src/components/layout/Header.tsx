@@ -24,12 +24,10 @@ export function Header({ room }: HeaderProps) {
     try {
       // Get current URL which includes the room ID
       const shareUrl = window.location.href;
-      
+
       // Try native share first (mobile)
       if (navigator.share) {
         await navigator.share({
-          title: "Join my Solo Chat",
-          text: "Join my encrypted chat!",
           url: shareUrl,
         });
       } else {

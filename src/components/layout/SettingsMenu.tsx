@@ -156,8 +156,6 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
     const shareUrl = window.location.href;
     if (navigator.share) {
       await navigator.share({
-        title: "Join my Solo Chat",
-        text: "Join my encrypted chat!",
         url: shareUrl,
       });
     } else {

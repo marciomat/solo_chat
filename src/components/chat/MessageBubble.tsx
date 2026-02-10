@@ -14,7 +14,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useUnread } from "@/contexts/UnreadContext";
-import { MailOpen, Mail } from "lucide-react";
+import { MailOpen, Mail, Copy } from "lucide-react";
+import { toast } from "sonner";
 
 interface MessageBubbleProps {
   message: MaybeLoaded<Message>;
@@ -44,6 +45,16 @@ export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
     }
   };
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.text || "");
+      toast.success("Message copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy message:", error);
+      toast.error("Failed to copy message");
+    }
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -63,7 +74,7 @@ export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
           {/* Message bubble */}
           <div
             className={cn(
-              "rounded-2xl px-4 py-2 break-words relative",
+              "rounded-2xl px-4 py-2 break-words relative select-none",
               isOwn
                 ? "bg-primary text-primary-foreground rounded-br-md"
                 : "bg-muted text-foreground rounded-bl-md",
@@ -104,6 +115,12 @@ export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
+        {message.text && (
+          <ContextMenuItem onClick={handleCopy}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copy message
+          </ContextMenuItem>
+        )}
         {messageIsUnread ? (
           <ContextMenuItem onClick={handleMarkAsRead}>
             <MailOpen className="mr-2 h-4 w-4" />
