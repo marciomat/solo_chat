@@ -18,10 +18,16 @@ function ChatContainerInner({ room }: ChatContainerProps) {
   useAppBadge(unreadCount);
 
   return (
-    <div className="flex flex-col h-[100dvh]">
-      <Header room={room} />
-      <MessageList room={room} />
-      <MessageInput room={room} />
+    <div className="flex flex-col h-[100dvh] overflow-hidden">
+      <div className="shrink-0">
+        <Header room={room} />
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <MessageList room={room} />
+      </div>
+      <div className="shrink-0">
+        <MessageInput room={room} />
+      </div>
     </div>
   );
 }

@@ -44,7 +44,7 @@ export function Header({ room }: HeaderProps) {
   };
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-40 safe-top">
       <div className="flex items-center justify-between h-14 px-4">
         {/* Left: App icon and name */}
         <div className="flex items-center gap-3">

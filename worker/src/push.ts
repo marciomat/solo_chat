@@ -55,8 +55,9 @@ export async function sendPushNotification(
         "Content-Type": "application/octet-stream",
         "Content-Encoding": "aes128gcm",
         "Content-Length": body.byteLength.toString(),
-        "TTL": "86400", // 24 hours
-        "Urgency": "high",
+        "TTL": "86400", // 24 hours - message waits if device offline
+        "Urgency": "high", // CRITICAL - wakes up killed iOS apps
+        "Topic": "solo-chat-messages", // Groups messages, prevents iOS from blocking for "spam"
       },
       body: body,
     });

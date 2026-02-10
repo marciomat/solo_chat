@@ -109,7 +109,7 @@ export function MessageInput({ room }: MessageInputProps) {
   const canSend = (text.trim() || imageBlob) && !isSending;
 
   return (
-    <div className="border-t bg-background p-4">
+    <div className="border-t bg-background p-4 safe-bottom">
       {/* Image preview */}
       {imagePreview && (
         <div className="mb-3 relative inline-block">

@@ -170,7 +170,7 @@ export function MessageList({ room }: MessageListProps) {
 
   return (
     <>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="h-full">
         <div className="flex flex-col gap-2 p-4">
           {messages.map((message, index) => {
             if (!message?.$isLoaded) return null;
