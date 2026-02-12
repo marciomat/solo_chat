@@ -12,17 +12,19 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import { useUnread } from "@/contexts/UnreadContext";
-import { MailOpen, Mail, Copy } from "lucide-react";
+import { MailOpen, Mail, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface MessageBubbleProps {
   message: MaybeLoaded<Message>;
   onImageClick?: (imageUrl: string) => void;
+  onDelete?: () => void;
 }
 
-export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
+export function MessageBubble({ message, onImageClick, onDelete }: MessageBubbleProps) {
   const { isUnread, markAsUnread, markAsRead } = useUnread();
   
   if (!message?.$isLoaded) return null;
@@ -52,6 +54,13 @@ export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
     } catch (error) {
       console.error("Failed to copy message:", error);
       toast.error("Failed to copy message");
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete();
+      toast.success("Message deleted");
     }
   };
 
@@ -132,6 +141,11 @@ export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
             Mark as unread
           </ContextMenuItem>
         )}
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={handleDelete} variant="destructive">
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete message
+        </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
   );

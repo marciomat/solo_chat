@@ -138,6 +138,14 @@ export function MessageList({ room }: MessageListProps) {
     setPreviewImage(null);
   }, []);
 
+  const handleDeleteMessage = useCallback((messageIndex: number) => {
+    if (!room?.$isLoaded) return;
+    if (!room.messages?.$isLoaded) return;
+
+    room.messages.$jazz.splice(messageIndex, 1);
+    room.$jazz.set("lastActivity", Date.now());
+  }, [room]);
+
   if (!room?.$isLoaded) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -179,6 +187,7 @@ export function MessageList({ room }: MessageListProps) {
                 key={message.$jazz.id || index}
                 message={message}
                 onImageClick={handleImageClick}
+                onDelete={() => handleDeleteMessage(index)}
               />
             );
           })}
