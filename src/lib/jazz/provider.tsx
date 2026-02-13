@@ -132,15 +132,13 @@ function ClientOnly({ children }: { children: ReactNode }) {
 }
 
 export function JazzProvider({ children }: JazzProviderProps) {
-  const apiKey = process.env.NEXT_PUBLIC_JAZZ_API_KEY || "solo-chat@example.com";
-
   return (
     <ClientOnly>
       <JazzErrorBoundary>
         <JazzReactProvider
           authSecretStorageKey="solo-chat-auth-storage"
           sync={{
-            peer: `wss://cloud.jazz.tools/?key=${apiKey}`,
+            peer: "wss://solo-relay.mmdev.uk/",
           }}
           defaultProfileName="Solo User"
         >
