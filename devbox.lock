@@ -53,6 +53,166 @@
       "last_modified": "2026-02-04T01:49:30Z",
       "resolved": "github:NixOS/nixpkgs/aa290c9891fa4ebe88f8889e59633d20cc06a5f2?lastModified=1770169770"
     },
+    "imagemagick@latest": {
+      "last_modified": "2026-02-02T06:50:11Z",
+      "resolved": "github:NixOS/nixpkgs/f08e6b11a5ed43637a8ac444dd44118bc7d273b9#imagemagick",
+      "source": "devbox-search",
+      "version": "7.1.2-12",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/qm3i85s0dfha5r320c5gyygaqnqxap0k-imagemagick-7.1.2-12",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/mxks47yhp0ax42p27mdidzyx6970w0kh-imagemagick-7.1.2-12-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/iqiqy0rhcl992qb149675737ga0w0v7d-imagemagick-7.1.2-12-doc"
+            }
+          ],
+          "store_path": "/nix/store/qm3i85s0dfha5r320c5gyygaqnqxap0k-imagemagick-7.1.2-12"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ynkqmcr4kqx6jjp8mn0q7sqiax129yg5-imagemagick-7.1.2-12",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/mk9cs25z5ngs8ip2z9m8kg2pp3sf4sr5-imagemagick-7.1.2-12-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/qaa257fbjzw8v9x2cy650cnlw954yib1-imagemagick-7.1.2-12-doc"
+            }
+          ],
+          "store_path": "/nix/store/ynkqmcr4kqx6jjp8mn0q7sqiax129yg5-imagemagick-7.1.2-12"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/f3ngpyhmhpiw0z52gmajfhc3yirn364h-imagemagick-7.1.2-12",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/bg195ahm482lwhn2zyambfywvkis9gvq-imagemagick-7.1.2-12-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/nmmii01cniapjkz0cdrzz8lfj92gkaym-imagemagick-7.1.2-12-doc"
+            }
+          ],
+          "store_path": "/nix/store/f3ngpyhmhpiw0z52gmajfhc3yirn364h-imagemagick-7.1.2-12"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/x60ccfr9gd8dqm91aqz8x5s8dhsdvr69-imagemagick-7.1.2-12",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/pj6ixbvy24gfsb68p7i0214dgwnwm3lf-imagemagick-7.1.2-12-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/s3ds4smhj3s2kwwbazz4qz6lrhv7zqvn-imagemagick-7.1.2-12-doc"
+            }
+          ],
+          "store_path": "/nix/store/x60ccfr9gd8dqm91aqz8x5s8dhsdvr69-imagemagick-7.1.2-12"
+        }
+      }
+    },
+    "librsvg@latest": {
+      "last_modified": "2026-02-02T23:09:17Z",
+      "resolved": "github:NixOS/nixpkgs/47472570b1e607482890801aeaf29bfb749884f6#librsvg",
+      "source": "devbox-search",
+      "version": "2.61.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1zmfxpajh1vfsly40aqnxwbkvicz30v1-librsvg-2.61.3",
+              "default": true
+            },
+            {
+              "name": "devdoc",
+              "path": "/nix/store/zq3h3c29kbq1rjjvaa686wpmimq4y5bv-librsvg-2.61.3-devdoc"
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/dlv4zqna9bry6465kkngmx9la2pb72as-librsvg-2.61.3-dev"
+            }
+          ],
+          "store_path": "/nix/store/1zmfxpajh1vfsly40aqnxwbkvicz30v1-librsvg-2.61.3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/plnpb2v0mmz9szrimzbsz9zcxf7hl90h-librsvg-2.61.3",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/wjixbprh2dj2g1inzkjm4hf68c7b0jw2-librsvg-2.61.3-dev"
+            },
+            {
+              "name": "devdoc",
+              "path": "/nix/store/b51ky52j9zbv39yk9s3w4krm6h1jfcbz-librsvg-2.61.3-devdoc"
+            }
+          ],
+          "store_path": "/nix/store/plnpb2v0mmz9szrimzbsz9zcxf7hl90h-librsvg-2.61.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/v47qqc5l17is04py2ajz93im1ini6a5a-librsvg-2.61.3",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/2j50bm5mng0g4ary1wqj1k1as1xj6hcl-librsvg-2.61.3-dev"
+            },
+            {
+              "name": "devdoc",
+              "path": "/nix/store/ad9cqds3svmf3gr59p561pcdppagdpv4-librsvg-2.61.3-devdoc"
+            }
+          ],
+          "store_path": "/nix/store/v47qqc5l17is04py2ajz93im1ini6a5a-librsvg-2.61.3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/cpfmyd7q4v4vz3b02x1c8ym2303xw6ll-librsvg-2.61.3",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/z8gxqy6izr08gxjv8x9v8j9vk8f0pbj7-librsvg-2.61.3-dev"
+            },
+            {
+              "name": "devdoc",
+              "path": "/nix/store/alw2bf9kxwz154cxm7zwfzxpdci6jpfi-librsvg-2.61.3-devdoc"
+            }
+          ],
+          "store_path": "/nix/store/cpfmyd7q4v4vz3b02x1c8ym2303xw6ll-librsvg-2.61.3"
+        }
+      }
+    },
     "nodejs@latest": {
       "last_modified": "2026-01-27T15:18:14Z",
       "plugin_version": "0.0.2",

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="32" height="32" fill="url(#bg)" rx="6"/>
+
+  <!-- Simplified S for small size -->
+  <path d="M 20 9
+           C 20 9, 17 7, 14 8
+           C 11 9, 9 12, 10 14
+           C 11 17, 13 17, 16 18
+           C 19 19, 23 20, 23 23
+           C 23 27, 19 28, 14 27
+           C 11 26, 9 24, 9 24"
+        fill="none"
+        stroke="url(#accent)"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Tiny lock indicator -->
+  <rect x="22" y="4" width="5" height="4" rx="0.5" fill="url(#accent)" opacity="0.8"/>
+  <path d="M 23 4 L 23 3 Q 23 1, 24.5 1 Q 26 1, 26 3 L 26 4"
+        fill="none"
+        stroke="url(#accent)"
+        stroke-width="1"
+        stroke-linecap="round"
+        opacity="0.8"/>
+</svg>

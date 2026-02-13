@@ -3,7 +3,9 @@
   "packages": [
     "claude-code@latest",
     "nodejs@latest",
-    "wrangler@latest"
+    "wrangler@latest",
+    "librsvg@latest",
+    "imagemagick@latest"
   ],
   "shell": {
     "init_hook": [

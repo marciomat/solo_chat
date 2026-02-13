@@ -1,4 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="384" height="384" viewBox="0 0 384 384">
-  <rect width="384" height="384" fill="#1a1a2e"/>
-  <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="192" fill="#4a9eff" text-anchor="middle" dominant-baseline="middle">S</text>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="384" height="384" fill="url(#bgGrad)" rx="60"/>
+
+  <!-- Chat bubble -->
+  <path d="M 75 105
+           Q 75 75, 105 75
+           L 279 75
+           Q 309 75, 309 105
+           L 309 225
+           Q 309 255, 279 255
+           L 150 255
+           L 105 300
+           L 120 255
+           L 105 255
+           Q 75 255, 75 225
+           Z"
+        fill="none"
+        stroke="url(#accentGrad)"
+        stroke-width="4.5"
+        opacity="0.4"/>
+
+  <!-- Stylized S -->
+  <g filter="url(#glow)">
+    <path d="M 232 120
+             C 232 120, 210 105, 180 112
+             C 150 120, 135 139, 138 157
+             C 142 180, 165 187, 192 191
+             C 221 195, 247 206, 247 232
+             C 247 262, 217 281, 180 277
+             C 150 274, 131 262, 131 262"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="21"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- Lock icon -->
+  <g transform="translate(262, 64)">
+    <rect x="0" y="15" width="37" height="30" rx="4.5" fill="url(#accentGrad)" opacity="0.9"/>
+    <path d="M 7.5 15 L 7.5 9 Q 7.5 0, 18.5 0 Q 29.5 0, 29.5 9 L 29.5 15"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="4.5"
+          stroke-linecap="round"
+          opacity="0.9"/>
+    <circle cx="18.5" cy="28" r="4.5" fill="#0f0f23"/>
+    <rect x="16" y="28" width="5" height="9" fill="#0f0f23"/>
+  </g>
+
+  <!-- Musical note -->
+  <g transform="translate(64, 262)" opacity="0.7">
+    <ellipse cx="15" cy="34" rx="13.5" ry="10.5" fill="url(#accentGrad)" transform="rotate(-20, 15, 34)"/>
+    <rect x="26" y="0" width="3.75" height="37" fill="url(#accentGrad)"/>
+    <path d="M 30 0 Q 52 7.5, 45 26" fill="none" stroke="url(#accentGrad)" stroke-width="3.75"/>
+  </g>
 </svg>

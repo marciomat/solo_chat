@@ -1,4 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" fill="#1a1a2e"/>
-  <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="96" fill="#4a9eff" text-anchor="middle" dominant-baseline="middle">S</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- No rounded corners for apple touch icon - iOS handles masking -->
+  <rect width="180" height="180" fill="url(#bgGrad)"/>
+
+  <!-- Chat bubble outline -->
+  <path d="M 36 50
+           Q 36 36, 50 36
+           L 130 36
+           Q 144 36, 144 50
+           L 144 106
+           Q 144 120, 130 120
+           L 70 120
+           L 50 140
+           L 56 120
+           L 50 120
+           Q 36 120, 36 106
+           Z"
+        fill="none"
+        stroke="url(#accentGrad)"
+        stroke-width="2.5"
+        opacity="0.4"/>
+
+  <!-- Stylized S -->
+  <g filter="url(#glow)">
+    <path d="M 109 56
+             C 109 56, 99 49, 85 53
+             C 71 56, 64 66, 66 75
+             C 68 85, 78 88, 90 90
+             C 103 92, 116 98, 116 111
+             C 116 125, 102 132, 85 130
+             C 71 128, 62 123, 62 123"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="10"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- Lock icon -->
+  <g transform="translate(123, 30)">
+    <rect x="0" y="7" width="19" height="15" rx="2.5" fill="url(#accentGrad)" opacity="0.9"/>
+    <path d="M 4 7 L 4 5 Q 4 0, 9.5 0 Q 15 0, 15 5 L 15 7"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          opacity="0.9"/>
+    <circle cx="9.5" cy="14" r="2.5" fill="#0f0f23"/>
+    <rect x="8" y="14" width="3" height="5" fill="#0f0f23"/>
+  </g>
+
+  <!-- Musical note -->
+  <g transform="translate(30, 123)" opacity="0.7">
+    <ellipse cx="7.5" cy="16" rx="6.5" ry="5" fill="url(#accentGrad)" transform="rotate(-20, 7.5, 16)"/>
+    <rect x="13" y="0" width="2" height="18" fill="url(#accentGrad)"/>
+    <path d="M 15 0 Q 24 4, 22 12" fill="none" stroke="url(#accentGrad)" stroke-width="2"/>
+  </g>
 </svg>

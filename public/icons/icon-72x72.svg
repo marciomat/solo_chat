@@ -1,4 +1,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
-  <rect width="72" height="72" fill="#1a1a2e"/>
-  <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="36" fill="#4a9eff" text-anchor="middle" dominant-baseline="middle">S</text>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="72" height="72" fill="url(#bgGrad)" rx="11"/>
+
+  <!-- Chat bubble - very simplified -->
+  <path d="M 14 20
+           Q 14 14, 20 14
+           L 52 14
+           Q 58 14, 58 20
+           L 58 43
+           Q 58 49, 52 49
+           L 28 49
+           L 20 57
+           L 22 49
+           L 20 49
+           Q 14 49, 14 43
+           Z"
+        fill="none"
+        stroke="url(#accentGrad)"
+        stroke-width="1.5"
+        opacity="0.4"/>
+
+  <!-- Stylized S - very bold -->
+  <g filter="url(#glow)">
+    <path d="M 44 23
+             C 44 23, 39 20, 34 21
+             C 29 23, 26 27, 27 31
+             C 28 36, 32 37, 36 38
+             C 41 39, 47 41, 47 46
+             C 47 52, 41 55, 34 54
+             C 29 53, 25 50, 25 50"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="5"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- Lock icon - minimal -->
+  <g transform="translate(49, 12)">
+    <rect x="0" y="3" width="8" height="6" rx="1" fill="url(#accentGrad)" opacity="0.9"/>
+    <path d="M 1.5 3 L 1.5 2 Q 1.5 0, 4 0 Q 6.5 0, 6.5 2 L 6.5 3"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="1.25"
+          stroke-linecap="round"
+          opacity="0.9"/>
+  </g>
 </svg>

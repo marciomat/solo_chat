@@ -1,4 +1,75 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <rect width="128" height="128" fill="#1a1a2e"/>
-  <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="64" fill="#4a9eff" text-anchor="middle" dominant-baseline="middle">S</text>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="128" height="128" fill="url(#bgGrad)" rx="20"/>
+
+  <!-- Chat bubble -->
+  <path d="M 25 35
+           Q 25 25, 35 25
+           L 93 25
+           Q 103 25, 103 35
+           L 103 75
+           Q 103 85, 93 85
+           L 50 85
+           L 35 100
+           L 40 85
+           L 35 85
+           Q 25 85, 25 75
+           Z"
+        fill="none"
+        stroke="url(#accentGrad)"
+        stroke-width="2"
+        opacity="0.4"/>
+
+  <!-- Stylized S -->
+  <g filter="url(#glow)">
+    <path d="M 77 40
+             C 77 40, 70 35, 61 37
+             C 51 40, 46 47, 47 53
+             C 49 61, 56 63, 64 65
+             C 73 67, 82 71, 82 79
+             C 82 89, 72 94, 61 92
+             C 51 91, 44 87, 44 87"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="7"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- Lock icon -->
+  <g transform="translate(87, 21)">
+    <rect x="0" y="5" width="13" height="10" rx="1.5" fill="url(#accentGrad)" opacity="0.9"/>
+    <path d="M 2.5 5 L 2.5 3.5 Q 2.5 0, 6.5 0 Q 10.5 0, 10.5 3.5 L 10.5 5"
+          fill="none"
+          stroke="url(#accentGrad)"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          opacity="0.9"/>
+    <circle cx="6.5" cy="9.5" r="1.5" fill="#0f0f23"/>
+  </g>
+
+  <!-- Musical note -->
+  <g transform="translate(21, 87)" opacity="0.7">
+    <ellipse cx="5" cy="11" rx="4.5" ry="3.5" fill="url(#accentGrad)" transform="rotate(-20, 5, 11)"/>
+    <rect x="9" y="0" width="1.25" height="12.5" fill="url(#accentGrad)"/>
+    <path d="M 10.25 0 Q 17 2.5, 15 8" fill="none" stroke="url(#accentGrad)" stroke-width="1.25"/>
+  </g>
 </svg>
