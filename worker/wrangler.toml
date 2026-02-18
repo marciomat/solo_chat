@@ -8,7 +8,7 @@ JAZZ_PEER = "wss://cloud.jazz.tools"
 
 # Custom domain
 [[routes]]
-pattern = "solo-push.mmdev.win"
+pattern = "solo-push.mmdev.uk"
 custom_domain = true
 
 # Secrets (set via wrangler secret put):
