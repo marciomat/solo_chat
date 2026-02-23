@@ -7,9 +7,10 @@ const NOTIFICATIONS_ENABLED_KEY = "solo-notifications-enabled";
 export function areNotificationsEnabled(): boolean {
   if (typeof window === "undefined") return false;
   const stored = localStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
-  // Default to false - user must explicitly enable notifications
+  // If key was never set (e.g. localStorage was cleared after user already granted permission),
+  // treat as enabled so the subscription is automatically restored on next app load.
   if (stored === null) {
-    return false;
+    return "Notification" in window && Notification.permission === "granted";
   }
   return stored === "true";
 }
