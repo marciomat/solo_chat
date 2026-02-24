@@ -84,6 +84,18 @@ export async function subscribeToPush(): Promise<{ success: true; subscription: 
       return { success: false, reason: "Push notifications not configured. Local notifications enabled." };
     }
 
+    // Clear any existing subscription before creating a new one.
+    // This is critical: if Chrome has a stale FCM registration from a previous
+    // VAPID key or domain, calling subscribe() without clearing first causes
+    // "Registration failed - push service error" because FCM rejects the
+    // new registration for an endpoint that already exists with a different key.
+    const existingSubscription = await registration.pushManager.getSubscription();
+    if (existingSubscription) {
+      console.log("[Push] Clearing stale existing subscription...");
+      await existingSubscription.unsubscribe();
+      console.log("[Push] Stale subscription cleared");
+    }
+
     // Subscribe to push
     console.log("[Push] Subscribing to push manager...");
     const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey) as Uint8Array<ArrayBuffer>;
