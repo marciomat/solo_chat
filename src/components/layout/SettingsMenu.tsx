@@ -63,19 +63,31 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
         // Also check if an actual push subscription exists in the browser
         if ("serviceWorker" in navigator && "PushManager" in window) {
           try {
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
-            setHasBrowserSubscription(!!sub);
+            // Use getRegistration() instead of ready to avoid hanging if SW is
+            // in "waiting" or "installing" state (common on iOS after SW update)
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+              const sub = await reg.pushManager.getSubscription();
+              setHasBrowserSubscription(!!sub);
+            }
+            // If no registration found, leave hasBrowserSubscription unchanged
           } catch {
-            setHasBrowserSubscription(false);
+            // On error, leave hasBrowserSubscription unchanged to avoid false "Re-enable"
           }
         }
       };
       checkStatus();
 
-      // Also check when window regains focus (user might have changed browser settings)
+      // Re-check when app regains visibility (covers both focus and iOS PWA foreground)
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") checkStatus();
+      };
       window.addEventListener("focus", checkStatus);
-      return () => window.removeEventListener("focus", checkStatus);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      return () => {
+        window.removeEventListener("focus", checkStatus);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
     }
   }, []);
 

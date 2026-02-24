@@ -69,7 +69,14 @@ export function PushPrompt({ room }: PushPromptProps) {
           hasAutoRegistered.current = true;
           return;
         }
-        const registration = await navigator.serviceWorker.ready;
+        // Use getRegistration() instead of ready to avoid hanging if SW is
+        // installing/waiting (iOS can be slow to activate the service worker)
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) {
+          console.log("[Push] No service worker registration found yet, deferring auto-registration");
+          // Don't mark as registered - will retry when room state changes again
+          return;
+        }
         let subscription = await registration.pushManager.getSubscription();
         console.log("[Push] Existing subscription:", subscription);
 
