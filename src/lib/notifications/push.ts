@@ -86,13 +86,11 @@ export async function subscribeToPush(): Promise<{ success: true; subscription: 
 
     // Subscribe to push
     console.log("[Push] Subscribing to push manager...");
-    const keyArray = urlBase64ToUint8Array(vapidPublicKey);
-    console.log("[Push] Application server key length:", keyArray.length);
-    // Create a new Uint8Array to ensure proper ArrayBuffer type
-    const applicationServerKey = new Uint8Array(keyArray).buffer;
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey) as Uint8Array<ArrayBuffer>;
+    console.log("[Push] Application server key length:", applicationServerKey.length);
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: applicationServerKey,
+      applicationServerKey,
     });
     console.log("[Push] Subscription successful:", subscription.endpoint);
 
