@@ -51,14 +51,25 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   const [displayName, setDisplayName] = useState("");
   const [notificationStatus, setNotificationStatus] = useState<string>("default");
   const [notificationsOn, setNotificationsOn] = useState(false);
+  const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
 
-  // Check notification permission and user preference on mount and when dropdown state changes
+  // Check notification permission, user preference, and actual browser subscription
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const checkStatus = () => {
+      const checkStatus = async () => {
         setNotificationStatus(getNotificationPermission());
         setNotificationsOn(areNotificationsEnabled());
+        // Also check if an actual push subscription exists in the browser
+        if ("serviceWorker" in navigator && "PushManager" in window) {
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            setHasBrowserSubscription(!!sub);
+          } catch {
+            setHasBrowserSubscription(false);
+          }
+        }
       };
       checkStatus();
 
@@ -81,18 +92,19 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
   };
 
   const handleEnableNotifications = async () => {
-    // If turning off, disable preference and unsubscribe from push
-    if (notificationsOn) {
+    // If turning off (and a real subscription exists), disable and unsubscribe
+    if (notificationsOn && hasBrowserSubscription) {
       console.log("[Notifications] Disabling notifications...");
       setNotificationsEnabled(false);
       setNotificationsOn(false);
-      // Unsubscribe from push to prevent service worker notifications
+      setHasBrowserSubscription(false);
       await unsubscribeFromPush();
       console.log("[Notifications] Unsubscribed from push");
       return;
     }
 
-    // If turning on, always subscribe to push (handles permission request if needed)
+    // If "on" but no real browser subscription exists (e.g. after reinstall/data clear),
+    // OR if explicitly turning on — always create a fresh subscription from this user gesture.
     setNotificationLoading(true);
     console.log("[Push] Requesting push subscription from settings...");
     try {
@@ -101,7 +113,7 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
       const newStatus = getNotificationPermission();
       setNotificationStatus(newStatus);
       if (result.success) {
-        // Register with Jazz room
+        setHasBrowserSubscription(true);
         if (room?.$isLoaded) {
           console.log("[Push] Registering subscription with Jazz room");
           const registered = await registerPushSubscription(result.subscription);
@@ -113,7 +125,6 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
         setNotificationsOn(true);
       } else {
         console.warn("[Push] Push subscription failed:", result.reason);
-        // If permission was granted but push failed (e.g., no VAPID), still enable local notifications
         if (newStatus === "granted") {
           setNotificationsEnabled(true);
           setNotificationsOn(true);
@@ -181,21 +192,21 @@ export function SettingsMenu({ room }: SettingsMenuProps) {
             <Share2 className="mr-2 h-4 w-4" />
             Share Link
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={handleEnableNotifications}
             disabled={notificationLoading || notificationStatus === "denied"}
           >
             {notificationStatus === "denied" ? (
               <BellOff className="mr-2 h-4 w-4 text-red-500" />
-            ) : notificationsOn ? (
+            ) : notificationsOn && hasBrowserSubscription ? (
               <BellRing className="mr-2 h-4 w-4 text-green-500" />
             ) : (
-              <BellOff className="mr-2 h-4 w-4" />
+              <BellOff className="mr-2 h-4 w-4 text-yellow-500" />
             )}
-            {notificationLoading ? "Enabling..." : 
+            {notificationLoading ? "Enabling..." :
              notificationStatus === "denied" ? "Notifications Blocked" :
-             notificationsOn ? "Notifications On" :
-             notificationStatus === "granted" ? "Notifications Off" :
+             notificationsOn && hasBrowserSubscription ? "Notifications On" :
+             notificationsOn && !hasBrowserSubscription ? "Re-enable Notifications" :
              "Enable Notifications"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
